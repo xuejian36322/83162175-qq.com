@@ -6,10 +6,19 @@ interface CreateOrderDto {
   customerName: string;
   invoiceCompanyName?: string;
   reportName?: string;
-  businessType: string;
-  quantity: number;
-  unitPrice: string;
-  contractAmount: string;
+  // 兼容旧字段（已废弃）
+  businessType?: string;
+  quantity?: number;
+  unitPrice?: string;
+  // 新字段：多业务类型支持
+  businessTypes?: Array<{
+    businessTypeId: string;
+    businessTypeName: string;
+    quantity: number;
+    unitPrice: number;
+    contractAmount: number;
+  }>;
+  contractAmount: string | number;
   actualAmount?: string;
   commissionStandard?: string;
   commissionFee?: string;
@@ -43,7 +52,7 @@ interface CreateOrderDto {
 @Injectable()
 export class OrdersService {
   /**
-   * 创建订单
+   * 创建订单（支持多业务类型）
    */
   async createOrder(dto: CreateOrderDto) {
     const client = getSupabaseClient();
@@ -51,8 +60,8 @@ export class OrdersService {
     // 生成订单号
     const orderNo = 'ORD' + Date.now();
 
-    // 插入订单数据
-    const { data, error } = await client
+    // 插入订单主表数据
+    const { data: orderData, error: orderError } = await client
       .from('business_orders')
       .insert({
         order_no: orderNo,
@@ -60,10 +69,11 @@ export class OrdersService {
         customer_name: dto.customerName,
         invoice_company_name: dto.invoiceCompanyName,
         report_name: dto.reportName,
-        business_type: dto.businessType,
-        quantity: dto.quantity,
-        unit_price: dto.unitPrice,
-        contract_amount: dto.contractAmount,
+        // 兼容旧字段（如果传了单个业务类型，则保留）
+        business_type: dto.businessType || (dto.businessTypes?.[0]?.businessTypeName),
+        quantity: dto.quantity || (dto.businessTypes?.[0]?.quantity) || 1,
+        unit_price: dto.unitPrice || (dto.businessTypes?.[0]?.unitPrice?.toString()) || '0',
+        contract_amount: dto.contractAmount.toString(),
         actual_amount: dto.actualAmount,
         commission_standard: dto.commissionStandard,
         commission_fee: dto.commissionFee,
@@ -96,15 +106,37 @@ export class OrdersService {
       .select()
       .single();
 
-    if (error) {
-      throw new Error(`创建订单失败: ${error.message}`);
+    if (orderError) {
+      throw new Error(`创建订单失败: ${orderError.message}`);
     }
 
-    return data;
+    // 如果有多业务类型，插入业务类型关联表
+    if (dto.businessTypes && dto.businessTypes.length > 0) {
+      const businessTypeItems = dto.businessTypes.map((bt) => ({
+        order_id: orderData.id,
+        business_type_id: bt.businessTypeId,
+        business_type_name: bt.businessTypeName,
+        quantity: bt.quantity,
+        unit_price: bt.unitPrice.toString(),
+        contract_amount: bt.contractAmount.toString(),
+      }));
+
+      const { error: btError } = await client
+        .from('order_business_types')
+        .insert(businessTypeItems);
+
+      if (btError) {
+        // 如果插入业务类型失败，删除已创建的订单
+        await client.from('business_orders').delete().eq('id', orderData.id);
+        throw new Error(`创建业务类型失败: ${btError.message}`);
+      }
+    }
+
+    return orderData;
   }
 
   /**
-   * 获取订单列表
+   * 获取订单列表（包含业务类型详情）
    */
   async getOrderList(params: {
     page?: number;
@@ -154,22 +186,36 @@ export class OrdersService {
   }
 
   /**
-   * 获取订单详情
+   * 获取订单详情（包含业务类型详情）
    */
   async getOrderDetail(id: string) {
     const client = getSupabaseClient();
 
-    const { data, error } = await client
+    // 获取订单基本信息
+    const { data: orderData, error: orderError } = await client
       .from('business_orders')
       .select('*')
       .eq('id', id)
       .single();
 
-    if (error) {
-      throw new Error(`获取订单详情失败: ${error.message}`);
+    if (orderError) {
+      throw new Error(`获取订单详情失败: ${orderError.message}`);
     }
 
-    return data;
+    // 获取业务类型详情
+    const { data: businessTypes, error: btError } = await client
+      .from('order_business_types')
+      .select('*')
+      .eq('order_id', id);
+
+    if (btError) {
+      throw new Error(`获取业务类型失败: ${btError.message}`);
+    }
+
+    return {
+      ...orderData,
+      businessTypes: businessTypes || [],
+    };
   }
 
   /**
@@ -188,7 +234,7 @@ export class OrdersService {
     if (dto.businessType) updateData.business_type = dto.businessType;
     if (dto.quantity) updateData.quantity = dto.quantity;
     if (dto.unitPrice) updateData.unit_price = dto.unitPrice;
-    if (dto.contractAmount) updateData.contract_amount = dto.contractAmount;
+    if (dto.contractAmount) updateData.contract_amount = dto.contractAmount.toString();
     if (dto.actualAmount) updateData.actual_amount = dto.actualAmount;
     if (dto.commissionStandard) updateData.commission_standard = dto.commissionStandard;
     if (dto.commissionFee) updateData.commission_fee = dto.commissionFee;

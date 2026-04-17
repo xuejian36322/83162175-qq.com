@@ -1,6 +1,18 @@
-import { pgTable, serial, timestamp, varchar, integer, text, boolean, numeric, jsonb, index } from "drizzle-orm/pg-core"
+import { pgTable, serial, timestamp, varchar, integer, text, boolean, numeric, jsonb, index, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
+// 角色枚举
+export const userRoleEnum = pgEnum("user_role", [
+  "company_admin",        // 公司管理员
+  "finance",              // 财务
+  "engineering_director", // 工程部负责人
+  "testing_director",     // 检测部负责人
+  "certificate_manager",  // 检测证书管理员
+  "business_assistant",   // 业务助理
+  "engineering_business_1", // 工程公司业务1部
+  "engineering_business_2", // 工程公司业务2部
+  "metrology_business_1"    // 计量公司业务1部
+])
 
 export const healthCheck = pgTable("health_check", {
   id: serial().notNull(),
@@ -16,7 +28,7 @@ export const users = pgTable(
     name: varchar("name", { length: 128 }).notNull(),
     phone: varchar("phone", { length: 20 }),
     avatar_url: varchar("avatar_url", { length: 500 }),
-    role: varchar("role", { length: 50 }).notNull().default("business_manager"), // 超级管理员/检测负责人/工程负责人/财务/业务经理/执行人员/证书编制
+    role: userRoleEnum("role").notNull().default("business_assistant"), // 使用新的角色枚举
     company: varchar("company", { length: 50 }).notNull().default("sanheng_jiliang"), // 叁恒计量/叁恒智安
     is_active: boolean("is_active").default(true).notNull(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -26,6 +38,26 @@ export const users = pgTable(
     index("users_open_id_idx").on(table.open_id),
     index("users_role_idx").on(table.role),
     index("users_company_idx").on(table.company),
+  ]
+);
+
+// 业务类型配置表 - 管理所有业务类型
+export const businessTypes = pgTable(
+  "business_types",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    name: varchar("name", { length: 100 }).notNull().unique(), // 业务类型名称
+    category: varchar("category", { length: 50 }).notNull(), // 分类（计量/工程/其他）
+    icon: varchar("icon", { length: 50 }), // 图标名称
+    description: varchar("description", { length: 200 }), // 描述
+    sort_order: integer("sort_order").default(0), // 排序
+    is_active: boolean("is_active").default(true).notNull(), // 是否启用
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("business_types_category_idx").on(table.category),
+    index("business_types_is_active_idx").on(table.is_active),
   ]
 );
 
@@ -42,11 +74,11 @@ export const businessOrders = pgTable(
     invoice_company_name: varchar("invoice_company_name", { length: 200 }), // 开票单位名称
     report_name: varchar("report_name", { length: 200 }), // 报告名称（计量业务）
 
-    // 业务信息
-    business_type: varchar("business_type", { length: 100 }).notNull(), // 业务类型
-    quantity: integer("quantity").notNull(), // 数量
-    unit_price: numeric("unit_price", { precision: 10, scale: 2 }).notNull(), // 单价
-    contract_amount: numeric("contract_amount", { precision: 12, scale: 2 }).notNull(), // 合同金额
+    // 业务信息（主业务类型，用于兼容旧数据）
+    business_type: varchar("business_type", { length: 100 }), // 主业务类型（已废弃，保留用于兼容）
+    quantity: integer("quantity"), // 数量（已废弃，保留用于兼容）
+    unit_price: numeric("unit_price", { precision: 10, scale: 2 }), // 单价（已废弃，保留用于兼容）
+    contract_amount: numeric("contract_amount", { precision: 12, scale: 2 }), // 合同金额（汇总）
     actual_amount: numeric("actual_amount", { precision: 12, scale: 2 }), // 实收金额
 
     // 费用相关
@@ -109,6 +141,25 @@ export const businessOrders = pgTable(
     index("business_orders_executor1_id_idx").on(table.executor1_id),
     index("business_orders_executor2_id_idx").on(table.executor2_id),
     index("business_orders_payment_date_idx").on(table.payment_date),
+  ]
+);
+
+// 订单业务类型关联表 - 支持一个订单多个业务类型
+export const orderBusinessTypes = pgTable(
+  "order_business_types",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    order_id: varchar("order_id", { length: 36 }).notNull().references(() => businessOrders.id, { onDelete: "cascade" }),
+    business_type_id: varchar("business_type_id", { length: 36 }).notNull().references(() => businessTypes.id), // 关联业务类型配置表
+    business_type_name: varchar("business_type_name", { length: 100 }).notNull(), // 冗余存储业务类型名称
+    quantity: integer("quantity").notNull(), // 数量
+    unit_price: numeric("unit_price", { precision: 10, scale: 2 }).notNull(), // 单价
+    contract_amount: numeric("contract_amount", { precision: 12, scale: 2 }).notNull(), // 合同金额（自动计算）
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("order_business_types_order_id_idx").on(table.order_id),
+    index("order_business_types_business_type_id_idx").on(table.business_type_id),
   ]
 );
 

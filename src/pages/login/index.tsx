@@ -35,10 +35,10 @@ export default function LoginPage() {
           icon: 'success',
         })
 
-        // 跳转到首页
+        // 跳转到角色选择页面
         setTimeout(() => {
-          Taro.navigateTo({
-            url: '/pages/index/index',
+          Taro.reLaunch({
+            url: '/pages/role-select/index',
           })
         }, 1500)
       } else {
