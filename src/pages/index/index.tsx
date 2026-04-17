@@ -1,7 +1,7 @@
 import { View, Text } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { useState, useEffect } from 'react'
-import { User, ClipboardList, FileText, DollarSign, ChartBarBig } from 'lucide-react-taro'
+import { User, ClipboardList, FileText, DollarSign, ChartBarBig, Plus } from 'lucide-react-taro'
 import { Button } from '@/components/ui/button'
 
 export default function IndexPage() {
@@ -29,6 +29,12 @@ export default function IndexPage() {
     Taro.clearStorageSync()
     Taro.redirectTo({
       url: '/pages/login/index',
+    })
+  }
+
+  const handleCreateOrder = () => {
+    Taro.navigateTo({
+      url: '/pages/order-create/index',
     })
   }
 
@@ -108,6 +114,17 @@ export default function IndexPage() {
             <Text className="block text-sm text-gray-600">当前为测试模式</Text>
           </View>
         </View>
+      </View>
+
+      {/* 快捷操作 */}
+      <View className="px-4 mb-4">
+        <Button
+          className="w-full bg-green-500 text-white"
+          onClick={handleCreateOrder}
+        >
+          <Plus size={20} color="#ffffff" />
+          <Text className="ml-2">新建订单</Text>
+        </Button>
       </View>
 
       {/* 功能模块 */}
