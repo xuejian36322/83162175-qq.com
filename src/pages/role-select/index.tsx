@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text } from '@tarojs/components'
-import { Building2, DollarSign, Wrench, ShieldCheck, FileCheck, User, Users, Gauge } from 'lucide-react-taro'
+import { Building2, DollarSign, Wrench, ShieldCheck, FileCheck, User, Users, Gauge, CircleCheck } from 'lucide-react-taro'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -69,6 +69,20 @@ const ROLES = [
     description: '负责计量公司1部的业务拓展',
     icon: Gauge,
     color: '#0891b2',
+  },
+  {
+    value: 'installer',
+    name: '安装工',
+    description: '负责燃气设备安装、管道施工等工程任务',
+    icon: Wrench,
+    color: '#f59e0b',
+  },
+  {
+    value: 'tester',
+    name: '检测员',
+    description: '负责各类设备的计量检测、数据采集和报告撰写',
+    icon: CircleCheck,
+    color: '#10b981',
   },
 ]
 

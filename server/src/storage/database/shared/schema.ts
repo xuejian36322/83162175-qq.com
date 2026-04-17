@@ -11,7 +11,9 @@ export const userRoleEnum = pgEnum("user_role", [
   "business_assistant",   // 业务助理
   "engineering_business_1", // 工程公司业务1部
   "engineering_business_2", // 工程公司业务2部
-  "metrology_business_1"    // 计量公司业务1部
+  "metrology_business_1",   // 计量公司业务1部
+  "installer",             // 安装工
+  "tester"                 // 检测员
 ])
 
 export const healthCheck = pgTable("health_check", {
