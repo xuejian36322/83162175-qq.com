@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Network } from '@/network'
-import { MapPin, Save, X } from 'lucide-react-taro'
+import { MapPin, Save, X, Plus, Minus, ChevronRight, User, Building2, FileText, Calculator, DollarSign } from 'lucide-react-taro'
 
 export default function OrderCreatePage() {
   const [loading, setLoading] = useState(false)
@@ -14,70 +15,50 @@ export default function OrderCreatePage() {
 
   // 表单数据
   const [formData, setFormData] = useState({
-    // 基本信息
     orderDate: new Date().toISOString().split('T')[0],
     customerName: '',
     invoiceCompanyName: '',
     reportName: '',
     companyName: 'sanheng_jiliang',
-
-    // 业务信息
     businessType: '',
     quantity: 1,
     unitPrice: '',
     contractAmount: '',
     actualAmount: '',
-
-    // 费用相关
     commissionStandard: '',
     commissionFee: '',
     thirdPartyCollection: '',
     transportFee: '',
     taxFee: '',
     deposit: '',
-
-    // 工费相关（智安）
     laborFee: '',
     laborFeeRemaining: '',
-
-    // 人员信息
     sourceUserId: '',
     executor1Id: '',
     executor2Id: '',
-
-    // 日期信息
     executionDate: '',
     commissionDate: '',
     paymentDate: '',
-
-    // 枚举字段
     paymentMethod: '开票收款',
     status: 'pending',
     reportType: '',
     testResult: '',
-
-    // 联系信息
     contactPerson: '',
     contactPhone: '',
     address: '',
-
-    // 位置信息
     locationLatitude: '',
     locationLongitude: '',
-
-    // 其他信息
     trackingNumber: '',
     remarks: '',
   })
 
-  // 业务类型选项
   const businessTypeOptions = [
-    '燃气报警器检测',
-    '燃气报警器安装',
-    '燃气报警器检定',
-    '管道改造',
-    '风机安装',
-    '压力表检测',
+    { name: '燃气报警器检测', icon: '🔥', popular: true },
+    { name: '燃气报警器安装', icon: '🔧', popular: true },
+    { name: '燃气报警器检定', icon: '✓', popular: true },
+    { name: '管道改造', icon: '🔨', popular: false },
+    { name: '风机安装', icon: '🌀', popular: false },
+    { name: '压力表检测', icon: '📊', popular: false },
   ]
 
   useEffect(() => {
@@ -89,34 +70,24 @@ export default function OrderCreatePage() {
     setUserInfo(user)
   }, [])
 
-  // 自动计算合同金额
   useEffect(() => {
     const quantity = parseFloat(formData.quantity.toString()) || 0
     const unitPrice = parseFloat(formData.unitPrice.toString()) || 0
     const contractAmount = (quantity * unitPrice).toFixed(2)
-    setFormData((prev) => ({
-      ...prev,
-      contractAmount,
-    }))
+    setFormData((prev) => ({ ...prev, contractAmount }))
   }, [formData.quantity, formData.unitPrice])
 
-  // 自动计算居间费
   useEffect(() => {
     const contractAmount = parseFloat(formData.contractAmount.toString()) || 0
     const commissionStandard = parseFloat(formData.commissionStandard.toString()) || 0
     const quantity = parseFloat(formData.quantity.toString()) || 0
     const commissionFee = (contractAmount - commissionStandard * quantity).toFixed(2)
-    setFormData((prev) => ({
-      ...prev,
-      commissionFee,
-    }))
+    setFormData((prev) => ({ ...prev, commissionFee }))
   }, [formData.contractAmount, formData.commissionStandard, formData.quantity])
 
-  // 地图选点
   const handleChooseLocation = async () => {
     try {
       const location = await Taro.chooseLocation({})
-
       setFormData((prev) => ({
         ...prev,
         address: location.address,
@@ -125,24 +96,20 @@ export default function OrderCreatePage() {
       }))
     } catch (error) {
       console.error('选择位置失败:', error)
-      Taro.showToast({
-        title: '选择位置失败',
-        icon: 'none',
-      })
+      Taro.showToast({ title: '选择位置失败', icon: 'none' })
     }
   }
 
-  // 处理输入变化
   const handleInputChange = (field: string, value: string | number) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  // 提交表单
+  const handleQuantityChange = (delta: number) => {
+    const newValue = Math.max(1, (parseInt(formData.quantity.toString()) || 0) + delta)
+    handleInputChange('quantity', newValue)
+  }
+
   const handleSubmit = async () => {
-    // 基础验证
     if (!formData.customerName) {
       Taro.showToast({ title: '请输入客户名称', icon: 'none' })
       return
@@ -164,75 +131,86 @@ export default function OrderCreatePage() {
       const res = await Network.request({
         url: '/api/orders',
         method: 'POST',
-        data: {
-          ...formData,
-          managerId: userInfo?.id,
-        },
-        header: {
-          Authorization: `Bearer ${token}`,
-        },
+        data: { ...formData, managerId: userInfo?.id },
+        header: { Authorization: `Bearer ${token}` },
       })
 
       console.log('创建订单响应:', res)
 
       if (res.data.code === 200) {
-        Taro.showToast({
-          title: '创建成功',
-          icon: 'success',
-        })
-
-        setTimeout(() => {
-          Taro.navigateBack()
-        }, 1500)
+        Taro.showToast({ title: '创建成功', icon: 'success' })
+        setTimeout(() => Taro.navigateBack(), 1500)
       } else {
-        Taro.showToast({
-          title: res.data.msg || '创建失败',
-          icon: 'none',
-        })
+        Taro.showToast({ title: res.data.msg || '创建失败', icon: 'none' })
       }
     } catch (error) {
       console.error('创建订单失败:', error)
-      Taro.showToast({
-        title: '创建失败，请重试',
-        icon: 'none',
-      })
+      Taro.showToast({ title: '创建失败，请重试', icon: 'none' })
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <View className="min-h-screen bg-gray-50 pb-20">
+    <View className="min-h-screen bg-gray-50 pb-24">
+      {/* 顶部进度提示 */}
+      <View className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 mb-4">
+        <View className="flex items-center justify-between">
+          <View className="flex items-center gap-2">
+            <Building2 size={18} color="#ffffff" />
+            <Text className="text-white font-medium">创建订单</Text>
+          </View>
+          <View className="flex items-center gap-1">
+            <View className="w-2 h-2 rounded-full bg-white" />
+            <View className="w-2 h-2 rounded-full bg-white opacity-30" />
+            <View className="w-2 h-2 rounded-full bg-white opacity-30" />
+          </View>
+        </View>
+      </View>
+
       {/* 基本信息 */}
-      <Card className="m-4">
-        <CardHeader>
-          <CardTitle className="text-base">基本信息</CardTitle>
+      <Card className="mx-4 mb-4">
+        <CardHeader className="pb-3">
+          <View className="flex items-center justify-between">
+            <View className="flex items-center gap-2">
+              <User size={18} color="#1890ff" />
+              <CardTitle className="text-base">基本信息</CardTitle>
+            </View>
+            <Badge variant="outline" className="text-xs">必填</Badge>
+          </View>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">
+            <Text className="block text-sm font-medium text-gray-700 mb-2">
               客户名称 <Text className="text-red-500">*</Text>
             </Text>
-            <Input
-              className="w-full"
-              placeholder="请输入客户名称"
-              value={formData.customerName}
-              onInput={(e) => handleInputChange('customerName', e.detail.value)}
-            />
+            <View className="relative">
+              <Input
+                className="w-full border-blue-200 focus:border-blue-500"
+                placeholder="请输入客户名称"
+                value={formData.customerName}
+                onInput={(e) => handleInputChange('customerName', e.detail.value)}
+              />
+              {formData.customerName && (
+                <View className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <ChevronRight size={16} color="#1890ff" />
+                </View>
+              )}
+            </View>
           </View>
 
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">开票单位名称</Text>
+            <Text className="block text-sm font-medium text-gray-700 mb-2">开票单位名称</Text>
             <Input
               className="w-full"
-              placeholder="请输入开票单位名称"
+              placeholder="请输入开票单位名称（选填）"
               value={formData.invoiceCompanyName}
               onInput={(e) => handleInputChange('invoiceCompanyName', e.detail.value)}
             />
           </View>
 
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">报告名称</Text>
+            <Text className="block text-sm font-medium text-gray-700 mb-2">报告名称</Text>
             <Input
               className="w-full"
               placeholder="请输入报告名称（计量业务）"
@@ -242,20 +220,26 @@ export default function OrderCreatePage() {
           </View>
 
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">
-              所属公司
-            </Text>
-            <View className="flex gap-2">
+            <Text className="block text-sm font-medium text-gray-700 mb-2">所属公司</Text>
+            <View className="flex gap-3">
               <Button
                 size="sm"
-                variant={formData.companyName === 'sanheng_jiliang' ? 'default' : 'outline'}
+                className={`flex-1 ${
+                  formData.companyName === 'sanheng_jiliang'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700'
+                }`}
                 onClick={() => handleInputChange('companyName', 'sanheng_jiliang')}
               >
                 叁恒计量
               </Button>
               <Button
                 size="sm"
-                variant={formData.companyName === 'sanheng_zhian' ? 'default' : 'outline'}
+                className={`flex-1 ${
+                  formData.companyName === 'sanheng_zhian'
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-100 text-gray-700'
+                }`}
                 onClick={() => handleInputChange('companyName', 'sanheng_zhian')}
               >
                 叁恒智安
@@ -266,58 +250,87 @@ export default function OrderCreatePage() {
       </Card>
 
       {/* 业务信息 */}
-      <Card className="m-4">
-        <CardHeader>
-          <CardTitle className="text-base">业务信息</CardTitle>
+      <Card className="mx-4 mb-4">
+        <CardHeader className="pb-3">
+          <View className="flex items-center justify-between">
+            <View className="flex items-center gap-2">
+              <FileText size={18} color="#52c41a" />
+              <CardTitle className="text-base">业务信息</CardTitle>
+            </View>
+            <Badge variant="outline" className="text-xs">必填</Badge>
+          </View>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">
+            <Text className="block text-sm font-medium text-gray-700 mb-2">
               业务类型 <Text className="text-red-500">*</Text>
             </Text>
-            <View className="space-y-2">
+            <View className="grid grid-cols-2 gap-2">
               {businessTypeOptions.map((option) => (
                 <View
-                  key={option}
-                  className={`p-3 rounded-lg border ${
-                    formData.businessType === option
+                  key={option.name}
+                  className={`relative p-3 rounded-lg border-2 text-center transition-all ${
+                    formData.businessType === option.name
                       ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200'
+                      : 'border-gray-200 hover:border-gray-300'
                   }`}
-                  onClick={() => handleInputChange('businessType', option)}
+                  onClick={() => handleInputChange('businessType', option.name)}
                 >
-                  <Text className="text-sm">{option}</Text>
+                  <Text className="text-2xl mb-1">{option.icon}</Text>
+                  <Text className="text-xs font-medium">{option.name}</Text>
+                  {option.popular && (
+                    <Badge className="absolute top-1 right-1 px-1 py-0 text-[10px] bg-orange-500">
+                      热
+                    </Badge>
+                  )}
                 </View>
               ))}
-              <Input
-                className="w-full"
-                placeholder="或自定义业务类型"
-                value={
-                  !businessTypeOptions.includes(formData.businessType)
-                    ? formData.businessType
-                    : ''
-                }
-                onInput={(e) => handleInputChange('businessType', e.detail.value)}
-              />
             </View>
+            <Input
+              className="w-full mt-2"
+              placeholder="或自定义业务类型"
+              value={
+                !businessTypeOptions.map(o => o.name).includes(formData.businessType)
+                  ? formData.businessType
+                  : ''
+              }
+              onInput={(e) => handleInputChange('businessType', e.detail.value)}
+            />
           </View>
 
-          <View className="flex gap-2">
+          <View className="flex gap-3">
             <View className="flex-1">
-              <Text className="block text-sm text-gray-600 mb-2">
+              <Text className="block text-sm font-medium text-gray-700 mb-2">
                 数量 <Text className="text-red-500">*</Text>
               </Text>
-              <Input
-                type="number"
-                className="w-full"
-                placeholder="请输入数量"
-                value={formData.quantity.toString()}
-                onInput={(e) => handleInputChange('quantity', e.detail.value)}
-              />
+              <View className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-10 h-10 p-0"
+                  onClick={() => handleQuantityChange(-1)}
+                >
+                  <Minus size={16} color="#666" />
+                </Button>
+                <Input
+                  type="number"
+                  className="flex-1 text-center font-bold"
+                  value={formData.quantity.toString()}
+                  onInput={(e) => handleInputChange('quantity', e.detail.value)}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-10 h-10 p-0"
+                  onClick={() => handleQuantityChange(1)}
+                >
+                  <Plus size={16} color="#666" />
+                </Button>
+              </View>
             </View>
 
             <View className="flex-1">
-              <Text className="block text-sm text-gray-600 mb-2">
+              <Text className="block text-sm font-medium text-gray-700 mb-2">
                 单价（元） <Text className="text-red-500">*</Text>
               </Text>
               <Input
@@ -331,22 +344,27 @@ export default function OrderCreatePage() {
           </View>
 
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">合同金额（元）</Text>
-            <Input
-              type="digit"
-              className="w-full bg-gray-50"
-              placeholder="自动计算"
-              value={formData.contractAmount}
-              disabled
-            />
+            <Text className="block text-sm font-medium text-gray-700 mb-2">
+              合同金额（元）
+            </Text>
+            <View className="relative">
+              <DollarSign size={18} color="#1890ff" className="absolute left-3 top-1/2 -translate-y-1/2" />
+              <Input
+                type="digit"
+                className="w-full bg-gradient-to-r from-blue-50 to-blue-100 pl-10 text-blue-600 font-bold"
+                placeholder="自动计算"
+                value={formData.contractAmount}
+                disabled
+              />
+            </View>
           </View>
 
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">实收金额（元）</Text>
+            <Text className="block text-sm font-medium text-gray-700 mb-2">实收金额（元）</Text>
             <Input
               type="digit"
               className="w-full"
-              placeholder="请输入实收金额"
+              placeholder="请输入实收金额（选填）"
               value={formData.actualAmount}
               onInput={(e) => handleInputChange('actualAmount', e.detail.value)}
             />
@@ -355,13 +373,16 @@ export default function OrderCreatePage() {
       </Card>
 
       {/* 费用信息 */}
-      <Card className="m-4">
-        <CardHeader>
-          <CardTitle className="text-base">费用信息</CardTitle>
+      <Card className="mx-4 mb-4">
+        <CardHeader className="pb-3">
+          <View className="flex items-center gap-2">
+            <Calculator size={18} color="#fa8c16" />
+            <CardTitle className="text-base">费用信息</CardTitle>
+          </View>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">居间标准（元/个）</Text>
+            <Text className="block text-sm font-medium text-gray-700 mb-2">居间标准（元/个）</Text>
             <Input
               type="digit"
               className="w-full"
@@ -372,48 +393,56 @@ export default function OrderCreatePage() {
           </View>
 
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">居间费用（元）</Text>
-            <Input
-              type="digit"
-              className="w-full bg-gray-50"
-              placeholder="自动计算"
-              value={formData.commissionFee}
-              disabled
-            />
+            <Text className="block text-sm font-medium text-gray-700 mb-2">居间费用（元）</Text>
+            <View className="relative">
+              <DollarSign size={18} color="#52c41a" className="absolute left-3 top-1/2 -translate-y-1/2" />
+              <Input
+                type="digit"
+                className="w-full bg-gradient-to-r from-green-50 to-green-100 pl-10 text-green-600 font-bold"
+                placeholder="自动计算"
+                value={formData.commissionFee}
+                disabled
+              />
+            </View>
           </View>
 
-          <View>
-            <Text className="block text-sm text-gray-600 mb-2">三方代收（元）</Text>
-            <Input
-              type="digit"
-              className="w-full"
-              placeholder="外包方直接收款金额"
-              value={formData.thirdPartyCollection}
-              onInput={(e) => handleInputChange('thirdPartyCollection', e.detail.value)}
-            />
-          </View>
+          <View className="grid grid-cols-2 gap-3">
+            <View>
+              <Text className="block text-sm font-medium text-gray-700 mb-2">三方代收</Text>
+              <Input
+                type="digit"
+                className="w-full"
+                placeholder="0"
+                value={formData.thirdPartyCollection}
+                onInput={(e) => handleInputChange('thirdPartyCollection', e.detail.value)}
+              />
+            </View>
 
-          <View>
-            <Text className="block text-sm text-gray-600 mb-2">路费（元）</Text>
-            <Input
-              type="digit"
-              className="w-full"
-              placeholder="请输入路费"
-              value={formData.transportFee}
-              onInput={(e) => handleInputChange('transportFee', e.detail.value)}
-            />
+            <View>
+              <Text className="block text-sm font-medium text-gray-700 mb-2">路费</Text>
+              <Input
+                type="digit"
+                className="w-full"
+                placeholder="0"
+                value={formData.transportFee}
+                onInput={(e) => handleInputChange('transportFee', e.detail.value)}
+              />
+            </View>
           </View>
         </CardContent>
       </Card>
 
       {/* 联系信息 */}
-      <Card className="m-4">
-        <CardHeader>
-          <CardTitle className="text-base">联系信息</CardTitle>
+      <Card className="mx-4 mb-4">
+        <CardHeader className="pb-3">
+          <View className="flex items-center gap-2">
+            <MapPin size={18} color="#1890ff" />
+            <CardTitle className="text-base">联系信息</CardTitle>
+          </View>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">联系人</Text>
+            <Text className="block text-sm font-medium text-gray-700 mb-2">联系人</Text>
             <Input
               className="w-full"
               placeholder="请输入联系人"
@@ -423,7 +452,7 @@ export default function OrderCreatePage() {
           </View>
 
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">联系电话</Text>
+            <Text className="block text-sm font-medium text-gray-700 mb-2">联系电话</Text>
             <Input
               type="number"
               className="w-full"
@@ -434,7 +463,7 @@ export default function OrderCreatePage() {
           </View>
 
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">客户地址</Text>
+            <Text className="block text-sm font-medium text-gray-700 mb-2">客户地址</Text>
             <Textarea
               className="w-full"
               placeholder="请输入客户地址"
@@ -445,19 +474,24 @@ export default function OrderCreatePage() {
           </View>
 
           <Button
+            className="w-full bg-blue-50 text-blue-600 border-blue-200"
             variant="outline"
-            size="sm"
             onClick={handleChooseLocation}
           >
-            <MapPin size={16} color="#1890ff" />
-            <Text className="ml-2">选择位置</Text>
+            <MapPin size={18} color="#1890ff" />
+            <Text className="ml-2">📍 地图选点</Text>
           </Button>
 
           {formData.locationLatitude && (
-            <View className="p-2 bg-blue-50 rounded-lg">
-              <Text className="text-xs text-blue-600">
-                已选择位置：{formData.locationLatitude},{' '}
-                {formData.locationLongitude}
+            <View className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+              <View className="flex items-center gap-2">
+                <MapPin size={16} color="#1890ff" />
+                <Text className="text-sm text-blue-600 font-medium">
+                  已选择位置
+                </Text>
+              </View>
+              <Text className="text-xs text-blue-500 mt-1">
+                {formData.locationLatitude}, {formData.locationLongitude}
               </Text>
             </View>
           )}
@@ -465,26 +499,29 @@ export default function OrderCreatePage() {
       </Card>
 
       {/* 其他信息 */}
-      <Card className="m-4">
-        <CardHeader>
-          <CardTitle className="text-base">其他信息</CardTitle>
+      <Card className="mx-4 mb-4">
+        <CardHeader className="pb-3">
+          <View className="flex items-center gap-2">
+            <FileText size={18} color="#722ed1" />
+            <CardTitle className="text-base">其他信息</CardTitle>
+          </View>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">运单号</Text>
+            <Text className="block text-sm font-medium text-gray-700 mb-2">运单号</Text>
             <Input
               className="w-full"
-              placeholder="请输入运单号"
+              placeholder="请输入运单号（选填）"
               value={formData.trackingNumber}
               onInput={(e) => handleInputChange('trackingNumber', e.detail.value)}
             />
           </View>
 
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">备注</Text>
+            <Text className="block text-sm font-medium text-gray-700 mb-2">备注</Text>
             <Textarea
               className="w-full"
-              placeholder="请输入备注信息"
+              placeholder="请输入备注信息（选填）"
               value={formData.remarks}
               onInput={(e) => handleInputChange('remarks', e.detail.value)}
               maxlength={500}
@@ -494,23 +531,29 @@ export default function OrderCreatePage() {
       </Card>
 
       {/* 底部按钮 */}
-      <View className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50">
+      <View className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50 shadow-lg">
         <View className="flex gap-3">
           <Button
             className="flex-1"
             variant="outline"
             onClick={() => Taro.navigateBack()}
           >
-            <X size={20} color="#1890ff" />
+            <X size={20} color="#666" />
             <Text className="ml-2">取消</Text>
           </Button>
           <Button
-            className="flex-1"
+            className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600"
             onClick={handleSubmit}
             disabled={loading}
           >
-            <Save size={20} color="#ffffff" />
-            <Text className="ml-2">{loading ? '提交中...' : '保存订单'}</Text>
+            {loading ? (
+              <Text className="ml-2">提交中...</Text>
+            ) : (
+              <>
+                <Save size={20} color="#ffffff" />
+                <Text className="ml-2">保存订单</Text>
+              </>
+            )}
           </Button>
         </View>
       </View>
