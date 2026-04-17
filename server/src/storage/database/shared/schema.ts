@@ -28,7 +28,8 @@ export const users = pgTable(
     name: varchar("name", { length: 128 }).notNull(),
     phone: varchar("phone", { length: 20 }),
     avatar_url: varchar("avatar_url", { length: 500 }),
-    role: userRoleEnum("role").notNull().default("business_assistant"), // 使用新的角色枚举
+    role: userRoleEnum("role").notNull().default("testing_worker"), // 使用新的角色枚举（兼容旧数据）
+    roles: jsonb("roles").default(sql`'[]'::jsonb`), // 多角色支持（JSONB 数组）
     company: varchar("company", { length: 50 }).notNull().default("sanheng_jiliang"), // 叁恒计量/叁恒智安
     is_active: boolean("is_active").default(true).notNull(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -122,6 +123,21 @@ export const businessOrders = pgTable(
     location_latitude: numeric("location_latitude", { precision: 10, scale: 7 }), // 纬度
     location_longitude: numeric("location_longitude", { precision: 10, scale: 7 }), // 经度
 
+    // 锁定相关（地图标点功能）
+    lock_status: varchar("lock_status", { length: 50 }).default("unlocked"), // unlocked/locked/expired
+    locked_by: varchar("locked_by", { length: 36 }).references(() => users.id), // 锁定人
+    locked_at: timestamp("locked_at", { withTimezone: true }), // 锁定时间
+
+    // 执行结果相关
+    actual_quantity: integer("actual_quantity"), // 实际数量
+    execution_photos: jsonb("execution_photos"), // 施工照片（JSON数组）
+    co_workers: jsonb("co_workers"), // 共同施工人员（JSON数组）
+
+    // 证书寄送相关
+    certificate_status: varchar("certificate_status", { length: 50 }).default("pending"), // pending/preparing/shipped/delivered
+    certificate_shipped_at: timestamp("certificate_shipped_at", { withTimezone: true }), // 证书寄送日期
+    certificate_delivered_at: timestamp("certificate_delivered_at", { withTimezone: true }), // 证书送达日期
+
     // 其他信息
     tracking_number: varchar("tracking_number", { length: 100 }), // 运单号
     remarks: text("remarks"), // 备注
@@ -141,6 +157,9 @@ export const businessOrders = pgTable(
     index("business_orders_executor1_id_idx").on(table.executor1_id),
     index("business_orders_executor2_id_idx").on(table.executor2_id),
     index("business_orders_payment_date_idx").on(table.payment_date),
+    index("business_orders_lock_status_idx").on(table.lock_status),
+    index("business_orders_locked_by_idx").on(table.locked_by),
+    index("business_orders_certificate_status_idx").on(table.certificate_status),
   ]
 );
 
