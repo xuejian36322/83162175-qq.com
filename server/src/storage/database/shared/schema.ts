@@ -235,3 +235,116 @@ export const expenseApplications = pgTable(
     index("expense_applications_approver_id_idx").on(table.approver_id),
   ]
 );
+
+// 任务执行记录表（用于安装工和检测员记录执行过程）
+export const taskExecutions = pgTable(
+  "task_executions",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    order_id: varchar("order_id", { length: 36 }).notNull().references(() => businessOrders.id, { onDelete: "cascade" }),
+    executor_id: varchar("executor_id", { length: 36 }).notNull().references(() => users.id),
+    task_type: varchar("task_type", { length: 50 }).notNull(), // 安装/检测
+    task_status: varchar("task_status", { length: 50 }).default("pending"), // 待执行/进行中/已完成/已取消
+    accept_time: timestamp("accept_time", { withTimezone: true }),
+    start_time: timestamp("start_time", { withTimezone: true }),
+    completion_time: timestamp("completion_time", { withTimezone: true }),
+    execution_data: jsonb("execution_data"), // 执行记录（JSON格式）
+    remarks: text("remarks"),
+    photos: jsonb("photos"), // 施工/检测照片（JSON数组）
+    location_latitude: numeric("location_latitude", { precision: 10, scale: 7 }),
+    location_longitude: numeric("location_longitude", { precision: 10, scale: 7 }),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("task_executions_order_id_idx").on(table.order_id),
+    index("task_executions_executor_id_idx").on(table.executor_id),
+    index("task_executions_task_status_idx").on(table.task_status),
+  ]
+);
+
+// 检测报告表（用于检测员和证书管理员）
+export const testingReports = pgTable(
+  "testing_reports",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    order_id: varchar("order_id", { length: 36 }).notNull().references(() => businessOrders.id, { onDelete: "cascade" }),
+    task_execution_id: varchar("task_execution_id", { length: 36 }).references(() => taskExecutions.id),
+    report_no: varchar("report_no", { length: 100 }).notNull().unique(), // 报告编号
+    testing_data: jsonb("testing_data").notNull(), // 检测数据（JSON格式）
+    test_result: varchar("test_result", { length: 50 }).notNull(), // 合格/不合格/待复检
+    conclusion: text("conclusion"), // 检测结论
+    testing_standard: varchar("testing_standard", { length: 200 }), // 检测标准
+    testing_environment: text("testing_environment"), // 检测环境
+    testing_equipment: text("testing_equipment"), // 检测设备
+    status: varchar("status", { length: 50 }).default("draft"), // 草稿/待审核/已审核/已发布
+    reviewer_id: varchar("reviewer_id", { length: 36 }).references(() => users.id), // 审核人
+    review_time: timestamp("review_time", { withTimezone: true }),
+    review_remarks: text("review_remarks"),
+    certificate_no: varchar("certificate_no", { length: 100 }), // 证书编号
+    certificate_date: timestamp("certificate_date", { withTimezone: true }), // 证书颁发日期
+    certificate_expiry_date: timestamp("certificate_expiry_date", { withTimezone: true }), // 证书有效期至
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }),
+    created_by: varchar("created_by", { length: 36 }).notNull().references(() => users.id),
+  },
+  (table) => [
+    index("testing_reports_order_id_idx").on(table.order_id),
+    index("testing_reports_task_execution_id_idx").on(table.task_execution_id),
+    index("testing_reports_status_idx").on(table.status),
+    index("testing_reports_report_no_idx").on(table.report_no),
+  ]
+);
+
+// 客户表（用于统一管理客户信息）
+export const customers = pgTable(
+  "customers",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    name: varchar("name", { length: 200 }).notNull(),
+    short_name: varchar("short_name", { length: 100 }),
+    invoice_company_name: varchar("invoice_company_name", { length: 200 }),
+    tax_id: varchar("tax_id", { length: 50 }),
+    invoice_address: text("invoice_address"),
+    invoice_phone: varchar("invoice_phone", { length: 20 }),
+    invoice_bank_name: varchar("invoice_bank_name", { length: 200 }),
+    invoice_bank_account: varchar("invoice_bank_account", { length: 100 }),
+    contact_person: varchar("contact_person", { length: 100 }),
+    contact_phone: varchar("contact_phone", { length: 20 }),
+    contact_email: varchar("contact_email", { length: 100 }),
+    address: text("address"),
+    industry: varchar("industry", { length: 100 }),
+    level: varchar("level", { length: 50 }).default("normal"), // 普通客户/重要客户/VIP客户
+    remarks: text("remarks"),
+    business_user_id: varchar("business_user_id", { length: 36 }).references(() => users.id),
+    company: varchar("company", { length: 50 }).notNull(),
+    is_active: boolean("is_active").default(true).notNull(),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("customers_name_idx").on(table.name),
+    index("customers_business_user_id_idx").on(table.business_user_id),
+    index("customers_company_idx").on(table.company),
+    index("customers_is_active_idx").on(table.is_active),
+  ]
+);
+
+// 系统设置表（用于公司管理员管理系统配置）
+export const systemSettings = pgTable(
+  "system_settings",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    key: varchar("key", { length: 100 }).notNull().unique(),
+    value: text("value").notNull(),
+    description: varchar("description", { length: 200 }),
+    category: varchar("category", { length: 50 }).default("general"),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("system_settings_key_idx").on(table.key),
+    index("system_settings_category_idx").on(table.category),
+  ]
+);
+

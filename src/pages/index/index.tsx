@@ -1,176 +1,285 @@
-import { View, Text } from '@tarojs/components'
+import { useEffect } from 'react'
 import Taro from '@tarojs/taro'
-import { useState, useEffect } from 'react'
-import { User, ClipboardList, FileText, DollarSign, ChartBarBig, Plus } from 'lucide-react-taro'
+import { View, Text } from '@tarojs/components'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  User,
+  FileText,
+  DollarSign,
+  Wrench,
+  Microscope,
+  ShieldCheck,
+  Users,
+  ChartBarBig,
+  Settings,
+  CircleCheck,
+  LogOut,
+  Bell,
+} from 'lucide-react-taro'
+import {
+  getCurrentRole,
+  getCurrentRoleName,
+  getCurrentUser,
+  canCreateOrder,
+  canViewMyTasks,
+  canManageUsers,
+  canViewStatistics,
+  canCreateInvoice,
+  canApproveExpense,
+  canManageCertificates,
+  canReviewReport,
+} from '@/utils/permission'
 
-export default function IndexPage() {
-  const [userInfo, setUserInfo] = useState<any>(null)
+// 功能入口配置
+interface FunctionItem {
+  id: string
+  name: string
+  icon: any
+  color: string
+  route: string
+  permission: () => boolean
+}
 
-  useEffect(() => {
-    checkLogin()
-  }, [])
-
-  const checkLogin = () => {
-    const token = Taro.getStorageSync('token')
-    const user = Taro.getStorageSync('userInfo')
-
-    if (!token || !user) {
-      Taro.redirectTo({
-        url: '/pages/login/index',
-      })
-      return
-    }
-
-    setUserInfo(user)
-  }
-
-  const handleLogout = () => {
-    Taro.clearStorageSync()
-    Taro.redirectTo({
-      url: '/pages/login/index',
-    })
-  }
-
-  const handleCreateOrder = () => {
-    Taro.navigateTo({
-      url: '/pages/order-create/index',
-    })
-  }
-
-  const menuItems = [
+// 获取功能入口列表
+function getFunctionItems(): FunctionItem[] {
+  const items: FunctionItem[] = [
+    // 订单管理（业务人员）
     {
-      icon: ClipboardList,
-      title: '订单台账',
-      description: '管理所有业务订单',
-      color: '#1890ff',
-      bgColor: 'bg-blue-100',
-      status: '开发中',
-    },
-    {
+      id: 'order_create',
+      name: '创建订单',
       icon: FileText,
-      title: '开票申请',
-      description: '提交开票申请',
+      color: '#1890ff',
+      route: '/pages/order-create/index',
+      permission: canCreateOrder,
+    },
+    // 我的任务（执行人员）
+    {
+      id: 'my_tasks',
+      name: '我的任务',
+      icon: CircleCheck,
       color: '#52c41a',
-      bgColor: 'bg-green-100',
-      status: '开发中',
+      route: '/pages/my-tasks/index',
+      permission: canViewMyTasks,
     },
+    // 用户管理（公司管理员）
     {
-      icon: DollarSign,
-      title: '费用申请',
-      description: '居间费/工费/运费',
-      color: '#fa8c16',
-      bgColor: 'bg-orange-100',
-      status: '开发中',
+      id: 'user_management',
+      name: '用户管理',
+      icon: Users,
+      color: '#faad14',
+      route: '/pages/users/index',
+      permission: canManageUsers,
     },
+    // 数据统计（管理员、财务、负责人）
     {
+      id: 'statistics',
+      name: '数据统计',
       icon: ChartBarBig,
-      title: '业绩统计',
-      description: '多维度数据分析',
       color: '#722ed1',
-      bgColor: 'bg-purple-100',
-      status: '开发中',
+      route: '/pages/statistics/index',
+      permission: canViewStatistics,
+    },
+    // 开票申请（财务）
+    {
+      id: 'invoice',
+      name: '开票申请',
+      icon: DollarSign,
+      color: '#fa8c16',
+      route: '/pages/invoice/index',
+      permission: canCreateInvoice,
+    },
+    // 费用审批（财务）
+    {
+      id: 'expense_approval',
+      name: '费用审批',
+      icon: DollarSign,
+      color: '#f5222d',
+      route: '/pages/expense-approval/index',
+      permission: canApproveExpense,
+    },
+    // 工程管理（工程部负责人）
+    {
+      id: 'engineering',
+      name: '工程管理',
+      icon: Wrench,
+      color: '#1890ff',
+      route: '/pages/engineering/index',
+      permission: () => {
+        const role = getCurrentRole()
+        return role === 'company_admin' || role === 'engineering_director'
+      },
+    },
+    // 检测管理（检测部负责人）
+    {
+      id: 'testing',
+      name: '检测管理',
+      icon: Microscope,
+      color: '#52c41a',
+      route: '/pages/testing/index',
+      permission: () => {
+        const role = getCurrentRole()
+        return role === 'company_admin' || role === 'testing_director'
+      },
+    },
+    // 证书管理（证书管理员）
+    {
+      id: 'certificates',
+      name: '证书管理',
+      icon: ShieldCheck,
+      color: '#722ed1',
+      route: '/pages/certificates/index',
+      permission: canManageCertificates,
+    },
+    // 报告审核（检测部负责人、证书管理员）
+    {
+      id: 'report_review',
+      name: '报告审核',
+      icon: FileText,
+      color: '#13c2c2',
+      route: '/pages/report-review/index',
+      permission: canReviewReport,
+    },
+    // 系统设置（公司管理员）
+    {
+      id: 'settings',
+      name: '系统设置',
+      icon: Settings,
+      color: '#8c8c8c',
+      route: '/pages/settings/index',
+      permission: () => {
+        const role = getCurrentRole()
+        return role === 'company_admin'
+      },
     },
   ]
 
-  if (!userInfo) {
-    return (
-      <View className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Text className="block text-gray-500">加载中...</Text>
-      </View>
-    )
+  // 过滤掉用户没有权限的功能入口
+  return items.filter(item => item.permission())
+}
+
+export default function IndexPage() {
+  const currentRole = getCurrentRole()
+  const currentRoleName = getCurrentRoleName()
+  const userInfo = getCurrentUser()
+  const functionItems = getFunctionItems()
+
+  useEffect(() => {
+    // 检查是否已登录
+    if (!currentRole) {
+      Taro.reLaunch({ url: '/pages/login/index' })
+    }
+  }, [currentRole])
+
+  const handleNavigate = (route: string) => {
+    Taro.navigateTo({ url: route })
+  }
+
+  const handleLogout = () => {
+    Taro.showModal({
+      title: '退出登录',
+      content: '确定要退出登录吗？',
+      success: (res) => {
+        if (res.confirm) {
+          Taro.clearStorageSync()
+          Taro.reLaunch({ url: '/pages/login/index' })
+        }
+      },
+    })
+  }
+
+  const handleSwitchRole = () => {
+    Taro.reLaunch({ url: '/pages/role-select/index' })
   }
 
   return (
-    <View className="min-h-screen bg-gray-50 pb-4">
-      {/* 顶部用户信息卡片 */}
-      <View className="bg-white p-6 mb-4">
-        <View className="flex items-center justify-between">
-          <View className="flex items-center">
-            <View className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mr-4">
-              <User size={32} color="#1890ff" />
-            </View>
-            <View>
-              <Text className="block text-xl font-bold text-gray-800">
-                {userInfo.name}
-              </Text>
-              <Text className="block text-sm text-gray-500">
-                {userInfo.company === 'sanheng_jiliang' ? '叁恒计量' : '叁恒智安'}
-              </Text>
-            </View>
+    <View className="min-h-screen bg-gray-50">
+      {/* 顶部用户信息 */}
+      <View className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-6">
+        <View className="flex items-center gap-4">
+          <View className="w-16 h-16 rounded-full bg-white opacity-20 flex items-center justify-center">
+            <User size={32} color="#ffffff" />
+          </View>
+          <View className="flex-1">
+            <Text className="block text-white text-lg font-semibold">
+              {userInfo?.name || '用户'}
+            </Text>
+            <Text className="block text-blue-100 text-sm mt-1">
+              {currentRoleName}
+            </Text>
           </View>
           <Button
             size="sm"
-            variant="outline"
-            onClick={handleLogout}
+            variant="ghost"
+            onClick={handleSwitchRole}
+            className="text-white border-white opacity-50"
           >
-            退出
+            <Text className="text-sm">切换角色</Text>
           </Button>
         </View>
-
-        <View className="mt-4 pt-4 border-t border-gray-100">
-          <View className="flex items-center">
-            <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
-            <Text className="block text-sm text-gray-600">当前为测试模式</Text>
-          </View>
-        </View>
       </View>
 
-      {/* 快捷操作 */}
-      <View className="px-4 mb-4">
-        <Button
-          className="w-full bg-green-500 text-white"
-          onClick={handleCreateOrder}
-        >
-          <Plus size={20} color="#ffffff" />
-          <Text className="ml-2">新建订单</Text>
-        </Button>
-      </View>
-
-      {/* 功能模块 */}
-      <View className="px-4">
-        <Text className="block text-lg font-semibold text-gray-800 mb-4">
-          功能模块
-        </Text>
-
-        <View className="grid grid-cols-2 gap-4">
-          {menuItems.map((item, index) => {
+      {/* 功能入口网格 */}
+      <View className="p-4">
+        <Text className="block text-gray-900 font-semibold mb-4">功能入口</Text>
+        <View className="grid grid-cols-2 gap-3">
+          {functionItems.map((item) => {
             const Icon = item.icon
             return (
-              <View
-                key={index}
-                className="bg-white rounded-xl p-4 shadow-sm"
+              <Card
+                key={item.id}
+                className="overflow-hidden"
+                onClick={() => handleNavigate(item.route)}
               >
-                <View className={`w-12 h-12 rounded-lg ${item.bgColor} flex items-center justify-center mb-3`}>
-                  <Icon size={24} color={item.color} />
-                </View>
-                <Text className="block text-base font-semibold text-gray-800 mb-1">
-                  {item.title}
-                </Text>
-                <Text className="block text-xs text-gray-500 mb-2">
-                  {item.description}
-                </Text>
-                <View className="inline-block px-2 py-1 bg-gray-100 rounded">
-                  <Text className="block text-xs text-gray-500">{item.status}</Text>
-                </View>
-              </View>
+                <CardContent className="p-4">
+                  <View className="flex items-center gap-3">
+                    <View
+                      className="w-10 h-10 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: `${item.color}20` }}
+                    >
+                      <Icon size={20} color={item.color} />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="block text-sm font-medium text-gray-900">
+                        {item.name}
+                      </Text>
+                    </View>
+                  </View>
+                </CardContent>
+              </Card>
             )
           })}
         </View>
       </View>
 
-      {/* 开发说明 */}
-      <View className="mx-4 mt-6 bg-orange-50 border border-orange-200 rounded-xl p-4">
-        <Text className="block text-sm font-semibold text-orange-800 mb-2">
-          💡 开发进度说明
-        </Text>
-        <Text className="block text-xs text-orange-700 leading-relaxed">
-          已完成基础架构：✅ 数据库设计 + ✅ 用户认证系统
-          {'\n\n'}
-          待开发模块：订单管理、业务流转、开票申请、费用申请、业绩统计
-          {'\n\n'}
-          如需继续开发，请告知优先级
-        </Text>
+      {/* 快捷操作 */}
+      <View className="px-4 mb-4">
+        <Text className="block text-gray-900 font-semibold mb-4">快捷操作</Text>
+        <Card>
+          <CardContent className="p-4">
+            <View className="flex items-center justify-between">
+              <View className="flex items-center gap-3">
+                <Bell size={20} color="#1890ff" />
+                <Text className="text-sm text-gray-700">通知消息</Text>
+              </View>
+              <View className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
+                <Text className="text-white text-xs">3</Text>
+              </View>
+            </View>
+          </CardContent>
+        </Card>
+      </View>
+
+      {/* 退出登录按钮 */}
+      <View className="px-4 pb-8">
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={handleLogout}
+        >
+          <LogOut size={18} color="#ef4444" />
+          <Text className="ml-2">退出登录</Text>
+        </Button>
       </View>
     </View>
   )

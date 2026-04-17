@@ -4,6 +4,8 @@ export default defineAppConfig({
     'pages/role-select/index',
     'pages/index/index',
     'pages/order-create/index',
+    'pages/users/index',
+    'pages/my-tasks/index',
   ],
   window: {
     backgroundTextStyle: 'light',
