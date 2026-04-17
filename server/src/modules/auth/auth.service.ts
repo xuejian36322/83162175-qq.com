@@ -26,11 +26,12 @@ export class AuthService {
     const appId = this.configService.get<string>('WX_APP_ID');
     const secret = this.configService.get<string>('WX_APP_SECRET');
 
-    if (!appId || !secret) {
-      throw new UnauthorizedException('微信配置未完成');
+    // 🔴 临时测试模式：如果配置是占位符，使用模拟登录
+    if (!appId || !secret || appId === 'your_app_id' || secret === 'your_app_secret') {
+      return this.mockLogin(code);
     }
 
-    // 调用微信 code2Session 接口
+    // 正常流程：调用微信 code2Session 接口
     const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${secret}&js_code=${code}&grant_type=authorization_code`;
 
     try {
@@ -52,62 +53,82 @@ export class AuthService {
       }
 
       // 查询或创建用户
-      const client = getSupabaseClient();
-      const { data: users, error: queryError } = await client
-        .from('users')
-        .select('*')
-        .eq('open_id', openid)
-        .maybeSingle();
-
-      if (queryError) {
-        throw new Error(`查询用户失败: ${queryError.message}`);
-      }
-
-      let user;
-      if (!users) {
-        // 创建新用户
-        const { data: newUser, error: insertError } = await client
-          .from('users')
-          .insert({
-            open_id: openid,
-            name: `用户${openid.substring(0, 8)}`,
-            role: 'business_manager',
-            company: 'sanheng_jiliang',
-            is_active: true,
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          throw new Error(`创建用户失败: ${insertError.message}`);
-        }
-
-        user = newUser;
-      } else {
-        user = users;
-      }
-
-      // 生成 token（使用 openid 作为 token，简化实现）
-      const token = openid;
-
-      return {
-        token,
-        user: {
-          id: user.id,
-          openId: user.open_id,
-          name: user.name,
-          phone: user.phone,
-          avatarUrl: user.avatar_url,
-          role: user.role,
-          company: user.company,
-        },
-      };
+      return this.getOrCreateUser(openid);
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
       throw new Error(`登录失败: ${error.message}`);
     }
+  }
+
+  /**
+   * 🔴 临时测试模式：模拟登录
+   */
+  private async mockLogin(code: string): Promise<any> {
+    // 使用 code 作为模拟的 openid
+    const mockOpenId = code || 'test_openid_' + Date.now();
+
+    console.log('🔴 使用测试模式登录，openid:', mockOpenId);
+
+    // 查询或创建用户
+    return this.getOrCreateUser(mockOpenId);
+  }
+
+  /**
+   * 查询或创建用户
+   */
+  private async getOrCreateUser(openid: string): Promise<any> {
+    const client = getSupabaseClient();
+    const { data: users, error: queryError } = await client
+      .from('users')
+      .select('*')
+      .eq('open_id', openid)
+      .maybeSingle();
+
+    if (queryError) {
+      throw new Error(`查询用户失败: ${queryError.message}`);
+    }
+
+    let user;
+    if (!users) {
+      // 创建新用户
+      const { data: newUser, error: insertError } = await client
+        .from('users')
+        .insert({
+          open_id: openid,
+          name: `用户${openid.substring(0, 8)}`,
+          role: 'super_admin', // 测试模式默认给超级管理员权限
+          company: 'sanheng_jiliang',
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        throw new Error(`创建用户失败: ${insertError.message}`);
+      }
+
+      user = newUser;
+    } else {
+      user = users;
+    }
+
+    // 生成 token
+    const token = openid;
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        openId: user.open_id,
+        name: user.name,
+        phone: user.phone,
+        avatarUrl: user.avatar_url,
+        role: user.role,
+        company: user.company,
+      },
+    };
   }
 
   /**

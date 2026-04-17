@@ -1,7 +1,8 @@
-import { View, Text, Button } from '@tarojs/components'
+import { View, Text } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { useState } from 'react'
 import { Network } from '@/network'
+import { Button } from '@/components/ui/button'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -10,8 +11,8 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // 获取微信登录 code
-      const { code } = await Taro.login()
+      // 🔴 测试模式：使用模拟 code
+      const code = 'test_user_' + Date.now()
 
       // 调用后端登录接口
       const res = await Network.request({
@@ -36,7 +37,7 @@ export default function LoginPage() {
 
         // 跳转到首页
         setTimeout(() => {
-          Taro.switchTab({
+          Taro.navigateTo({
             url: '/pages/index/index',
           })
         }, 1500)
@@ -63,22 +64,51 @@ export default function LoginPage() {
         <Text className="block text-3xl font-bold text-blue-600 text-center mb-2">
           陕西叁恒
         </Text>
-        <Text className="block text-base text-gray-500 text-center">
+        <Text className="block text-base text-gray-500 text-center mb-2">
           企业业务管理系统
         </Text>
+        <View className="bg-orange-100 rounded-lg p-3 mt-4">
+          <Text className="block text-sm text-orange-600 text-center">
+            🔴 当前为测试模式
+          </Text>
+          <Text className="block text-xs text-orange-500 text-center mt-1">
+            配置微信 AppID 后可使用真实登录
+          </Text>
+        </View>
       </View>
 
       <View className="w-full max-w-sm">
         <Button
-          className="w-full bg-green-500 text-white rounded-lg py-4"
+          className="w-full bg-green-500 text-white rounded-lg py-4 mb-4"
           onClick={handleLogin}
           disabled={loading}
         >
-          {loading ? '登录中...' : '微信一键登录'}
+          {loading ? '登录中...' : '📱 点击登录测试'}
         </Button>
 
+        <View className="bg-white rounded-lg p-4 shadow-sm">
+          <Text className="block text-sm font-semibold text-gray-700 mb-2">
+            系统功能预览
+          </Text>
+          <Text className="block text-xs text-gray-500 mb-1">
+            ✓ 订单台账管理
+          </Text>
+          <Text className="block text-xs text-gray-500 mb-1">
+            ✓ 业务流转（待办/接单/执行）
+          </Text>
+          <Text className="block text-xs text-gray-500 mb-1">
+            ✓ 开票申请与审批
+          </Text>
+          <Text className="block text-xs text-gray-500 mb-1">
+            ✓ 费用申请（居间费/工费/运费）
+          </Text>
+          <Text className="block text-xs text-gray-500">
+            ✓ 业绩统计分析
+          </Text>
+        </View>
+
         <Text className="block text-xs text-gray-400 text-center mt-4">
-          登录即表示同意《用户协议》和《隐私政策》
+          测试账号默认拥有超级管理员权限
         </Text>
       </View>
     </View>
