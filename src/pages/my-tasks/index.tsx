@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Network } from '@/network'
 import { Play, CircleCheck, Clock, MapPin } from 'lucide-react-taro'
-import { getCurrentUser, isInstaller, isTester } from '@/utils/permission'
+import { getCurrentUser, isExecutor, isTestingWorker, isInstallationWorker } from '@/utils/permission'
 
 export default function MyTasksPage() {
   const [tasks, setTasks] = useState<any[]>([])
@@ -14,11 +14,11 @@ export default function MyTasksPage() {
   const [activeTab, setActiveTab] = useState<'pending' | 'in_progress' | 'completed'>('pending')
 
   const currentUser = getCurrentUser()
-  const taskType = isInstaller() ? '安装' : isTester() ? '检测' : '任务'
+  const taskType = isInstallationWorker() ? '安装' : isTestingWorker() ? '检测' : '任务'
 
   useEffect(() => {
     // 检查权限
-    if (!isInstaller() && !isTester()) {
+    if (!isExecutor()) {
       Taro.showToast({
         title: '无权访问',
         icon: 'none',

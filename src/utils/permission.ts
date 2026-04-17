@@ -1,34 +1,32 @@
 import Taro from '@tarojs/taro';
 
 /**
- * 用户角色枚举
+ * 用户角色枚举（新需求：8个角色）
  */
 export enum UserRole {
-  COMPANY_ADMIN = 'company_admin',        // 公司管理员
-  FINANCE = 'finance',                   // 财务
-  ENGINEERING_DIRECTOR = 'engineering_director', // 工程部负责人
-  TESTING_DIRECTOR = 'testing_director', // 检测部负责人
-  CERTIFICATE_MANAGER = 'certificate_manager', // 检测证书管理员
-  BUSINESS_ASSISTANT = 'business_assistant',   // 业务助理
-  ENGINEERING_BUSINESS_1 = 'engineering_business_1', // 工程公司业务1部
-  ENGINEERING_BUSINESS_2 = 'engineering_business_2', // 工程公司业务2部
-  METROLOGY_BUSINESS_1 = 'metrology_business_1',   // 计量公司业务1部
-  INSTALLER = 'installer',             // 安装工
-  TESTER = 'tester',                   // 检测员
+  SUPER_ADMIN = 'super_admin',          // 超级管理员（张宇）
+  TESTING_MANAGER = 'testing_manager',  // 检测负责人（袁昭）
+  ENGINEERING_MANAGER = 'engineering_manager', // 工程负责人（袁勃，兼业务经理）
+  FINANCE = 'finance',                  // 财务
+  BUSINESS_MANAGER = 'business_manager', // 业务经理（肖兴涛、陈俭等）
+  TESTING_WORKER = 'testing_worker',    // 检测人员
+  INSTALLATION_WORKER = 'installation_worker', // 安装人员
+  CERTIFICATE_MAKER = 'certificate_maker',     // 证书编制人员
 }
 
 /**
- * 获取当前用户角色
+ * 获取当前用户角色列表
  */
-export function getCurrentRole(): UserRole | null {
-  return Taro.getStorageSync('selectedRole') || null;
+export function getCurrentRoles(): UserRole[] {
+  const roles = Taro.getStorageSync('selectedRoles') || [];
+  return Array.isArray(roles) ? roles : [roles];
 }
 
 /**
- * 获取当前用户角色名称
+ * 获取当前用户角色名称列表
  */
-export function getCurrentRoleName(): string {
-  return Taro.getStorageSync('selectedRoleName') || '';
+export function getCurrentRoleNames(): string {
+  return Taro.getStorageSync('selectedRoleNames') || '';
 }
 
 /**
@@ -39,26 +37,48 @@ export function getCurrentUser(): any {
 }
 
 /**
- * 检查用户是否有指定角色
+ * 检查用户是否有指定角色（支持多角色）
  */
 export function hasRole(role: UserRole): boolean {
-  const currentRole = getCurrentRole();
-  return currentRole === role;
+  const currentRoles = getCurrentRoles();
+  return currentRoles.includes(role);
 }
 
 /**
  * 检查用户是否有任一指定角色
  */
 export function hasAnyRole(roles: UserRole[]): boolean {
-  const currentRole = getCurrentRole();
-  return roles.includes(currentRole as UserRole);
+  const currentRoles = getCurrentRoles();
+  return roles.some(role => currentRoles.includes(role));
 }
 
 /**
- * 检查用户是否是管理员
+ * 检查用户是否有所有指定角色
  */
-export function isAdmin(): boolean {
-  return hasRole(UserRole.COMPANY_ADMIN);
+export function hasAllRoles(roles: UserRole[]): boolean {
+  const currentRoles = getCurrentRoles();
+  return roles.every(role => currentRoles.includes(role));
+}
+
+/**
+ * 检查用户是否是超级管理员
+ */
+export function isSuperAdmin(): boolean {
+  return hasRole(UserRole.SUPER_ADMIN);
+}
+
+/**
+ * 检查用户是否是检测负责人
+ */
+export function isTestingManager(): boolean {
+  return hasRole(UserRole.TESTING_MANAGER);
+}
+
+/**
+ * 检查用户是否是工程负责人
+ */
+export function isEngineeringManager(): boolean {
+  return hasRole(UserRole.ENGINEERING_MANAGER);
 }
 
 /**
@@ -69,57 +89,45 @@ export function isFinance(): boolean {
 }
 
 /**
- * 检查用户是否是工程部负责人
+ * 检查用户是否是业务经理
  */
-export function isEngineeringDirector(): boolean {
-  return hasRole(UserRole.ENGINEERING_DIRECTOR);
+export function isBusinessManager(): boolean {
+  return hasRole(UserRole.BUSINESS_MANAGER);
 }
 
 /**
- * 检查用户是否是检测部负责人
+ * 检查用户是否是检测人员
  */
-export function isTestingDirector(): boolean {
-  return hasRole(UserRole.TESTING_DIRECTOR);
+export function isTestingWorker(): boolean {
+  return hasRole(UserRole.TESTING_WORKER);
 }
 
 /**
- * 检查用户是否是证书管理员
+ * 检查用户是否是安装人员
  */
-export function isCertificateManager(): boolean {
-  return hasRole(UserRole.CERTIFICATE_MANAGER);
+export function isInstallationWorker(): boolean {
+  return hasRole(UserRole.INSTALLATION_WORKER);
 }
 
 /**
- * 检查用户是否是业务人员
+ * 检查用户是否是证书编制人员
  */
-export function isBusinessStaff(): boolean {
-  return hasAnyRole([
-    UserRole.BUSINESS_ASSISTANT,
-    UserRole.ENGINEERING_BUSINESS_1,
-    UserRole.ENGINEERING_BUSINESS_2,
-    UserRole.METROLOGY_BUSINESS_1,
-  ]);
+export function isCertificateMaker(): boolean {
+  return hasRole(UserRole.CERTIFICATE_MAKER);
 }
 
 /**
- * 检查用户是否是安装工
- */
-export function isInstaller(): boolean {
-  return hasRole(UserRole.INSTALLER);
-}
-
-/**
- * 检查用户是否是检测员
- */
-export function isTester(): boolean {
-  return hasRole(UserRole.TESTER);
-}
-
-/**
- * 检查用户是否是执行人员（安装工或检测员）
+ * 检查用户是否是执行人员（检测人员或安装人员）
  */
 export function isExecutor(): boolean {
-  return isInstaller() || isTester();
+  return isTestingWorker() || isInstallationWorker();
+}
+
+/**
+ * 检查用户是否是负责人（检测负责人或工程负责人）
+ */
+export function isManager(): boolean {
+  return isTestingManager() || isEngineeringManager();
 }
 
 /**
@@ -127,11 +135,11 @@ export function isExecutor(): boolean {
  */
 export function canViewAllOrders(): boolean {
   return hasAnyRole([
-    UserRole.COMPANY_ADMIN,
+    UserRole.SUPER_ADMIN,
     UserRole.FINANCE,
-    UserRole.ENGINEERING_DIRECTOR,
-    UserRole.TESTING_DIRECTOR,
-    UserRole.CERTIFICATE_MANAGER,
+    UserRole.TESTING_MANAGER,
+    UserRole.ENGINEERING_MANAGER,
+    UserRole.CERTIFICATE_MAKER,
   ]);
 }
 
@@ -140,11 +148,9 @@ export function canViewAllOrders(): boolean {
  */
 export function canCreateOrder(): boolean {
   return hasAnyRole([
-    UserRole.COMPANY_ADMIN,
-    UserRole.BUSINESS_ASSISTANT,
-    UserRole.ENGINEERING_BUSINESS_1,
-    UserRole.ENGINEERING_BUSINESS_2,
-    UserRole.METROLOGY_BUSINESS_1,
+    UserRole.SUPER_ADMIN,
+    UserRole.BUSINESS_MANAGER,
+    UserRole.ENGINEERING_MANAGER, // 兼业务经理
   ]);
 }
 
@@ -153,13 +159,10 @@ export function canCreateOrder(): boolean {
  */
 export function canEditOrder(): boolean {
   return hasAnyRole([
-    UserRole.COMPANY_ADMIN,
-    UserRole.BUSINESS_ASSISTANT,
-    UserRole.ENGINEERING_BUSINESS_1,
-    UserRole.ENGINEERING_BUSINESS_2,
-    UserRole.METROLOGY_BUSINESS_1,
-    UserRole.ENGINEERING_DIRECTOR,
-    UserRole.TESTING_DIRECTOR,
+    UserRole.SUPER_ADMIN,
+    UserRole.BUSINESS_MANAGER,
+    UserRole.ENGINEERING_MANAGER,
+    UserRole.TESTING_MANAGER,
   ]);
 }
 
@@ -167,21 +170,33 @@ export function canEditOrder(): boolean {
  * 检查用户是否可以删除订单
  */
 export function canDeleteOrder(): boolean {
-  return isAdmin();
+  return isSuperAdmin();
 }
 
 /**
  * 检查用户是否可以创建开票申请
  */
 export function canCreateInvoice(): boolean {
-  return hasAnyRole([UserRole.COMPANY_ADMIN, UserRole.FINANCE]);
+  return hasAnyRole([UserRole.SUPER_ADMIN, UserRole.FINANCE, UserRole.BUSINESS_MANAGER]);
 }
 
 /**
  * 检查用户是否可以审批费用
  */
 export function canApproveExpense(): boolean {
-  return hasAnyRole([UserRole.COMPANY_ADMIN, UserRole.FINANCE]);
+  return hasAnyRole([UserRole.SUPER_ADMIN, UserRole.FINANCE]);
+}
+
+/**
+ * 检查用户是否可以申请费用
+ */
+export function canApplyExpense(): boolean {
+  return hasAnyRole([
+    UserRole.SUPER_ADMIN,
+    UserRole.BUSINESS_MANAGER,
+    UserRole.ENGINEERING_MANAGER,
+    UserRole.TESTING_MANAGER,
+  ]);
 }
 
 /**
@@ -189,9 +204,9 @@ export function canApproveExpense(): boolean {
  */
 export function canAssignTask(): boolean {
   return hasAnyRole([
-    UserRole.COMPANY_ADMIN,
-    UserRole.ENGINEERING_DIRECTOR,
-    UserRole.TESTING_DIRECTOR,
+    UserRole.SUPER_ADMIN,
+    UserRole.TESTING_MANAGER,
+    UserRole.ENGINEERING_MANAGER,
   ]);
 }
 
@@ -206,7 +221,7 @@ export function canViewMyTasks(): boolean {
  * 检查用户是否可以管理用户
  */
 export function canManageUsers(): boolean {
-  return isAdmin();
+  return isSuperAdmin();
 }
 
 /**
@@ -214,13 +229,11 @@ export function canManageUsers(): boolean {
  */
 export function canViewStatistics(): boolean {
   return hasAnyRole([
-    UserRole.COMPANY_ADMIN,
+    UserRole.SUPER_ADMIN,
     UserRole.FINANCE,
-    UserRole.ENGINEERING_DIRECTOR,
-    UserRole.TESTING_DIRECTOR,
-    UserRole.ENGINEERING_BUSINESS_1,
-    UserRole.ENGINEERING_BUSINESS_2,
-    UserRole.METROLOGY_BUSINESS_1,
+    UserRole.TESTING_MANAGER,
+    UserRole.ENGINEERING_MANAGER,
+    UserRole.BUSINESS_MANAGER,
   ]);
 }
 
@@ -228,7 +241,7 @@ export function canViewStatistics(): boolean {
  * 检查用户是否可以管理证书
  */
 export function canManageCertificates(): boolean {
-  return hasAnyRole([UserRole.COMPANY_ADMIN, UserRole.CERTIFICATE_MANAGER]);
+  return hasAnyRole([UserRole.SUPER_ADMIN, UserRole.CERTIFICATE_MAKER]);
 }
 
 /**
@@ -236,10 +249,24 @@ export function canManageCertificates(): boolean {
  */
 export function canReviewReport(): boolean {
   return hasAnyRole([
-    UserRole.COMPANY_ADMIN,
-    UserRole.TESTING_DIRECTOR,
-    UserRole.CERTIFICATE_MANAGER,
+    UserRole.SUPER_ADMIN,
+    UserRole.TESTING_MANAGER,
+    UserRole.CERTIFICATE_MAKER,
   ]);
+}
+
+/**
+ * 检查用户是否可以在地图上锁定订单
+ */
+export function canLockOrderOnMap(): boolean {
+  return isExecutor();
+}
+
+/**
+ * 检查用户是否可以查看工费字段
+ */
+export function canViewLaborFee(): boolean {
+  return hasAnyRole([UserRole.SUPER_ADMIN, UserRole.ENGINEERING_MANAGER]);
 }
 
 /**
@@ -247,17 +274,14 @@ export function canReviewReport(): boolean {
  */
 export function getRoleDisplayName(role: UserRole): string {
   const roleNames: Record<UserRole, string> = {
-    [UserRole.COMPANY_ADMIN]: '公司管理员',
+    [UserRole.SUPER_ADMIN]: '超级管理员',
+    [UserRole.TESTING_MANAGER]: '检测负责人',
+    [UserRole.ENGINEERING_MANAGER]: '工程负责人',
     [UserRole.FINANCE]: '财务',
-    [UserRole.ENGINEERING_DIRECTOR]: '工程部负责人',
-    [UserRole.TESTING_DIRECTOR]: '检测部负责人',
-    [UserRole.CERTIFICATE_MANAGER]: '检测证书管理员',
-    [UserRole.BUSINESS_ASSISTANT]: '业务助理',
-    [UserRole.ENGINEERING_BUSINESS_1]: '工程公司业务1部',
-    [UserRole.ENGINEERING_BUSINESS_2]: '工程公司业务2部',
-    [UserRole.METROLOGY_BUSINESS_1]: '计量公司业务1部',
-    [UserRole.INSTALLER]: '安装工',
-    [UserRole.TESTER]: '检测员',
+    [UserRole.BUSINESS_MANAGER]: '业务经理',
+    [UserRole.TESTING_WORKER]: '检测人员',
+    [UserRole.INSTALLATION_WORKER]: '安装人员',
+    [UserRole.CERTIFICATE_MAKER]: '证书编制人员',
   };
   return roleNames[role] || role;
 }

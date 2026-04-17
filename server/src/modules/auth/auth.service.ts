@@ -98,7 +98,7 @@ export class AuthService {
         .insert({
           open_id: openid,
           name: `用户${openid.substring(0, 8)}`,
-          role: 'super_admin', // 测试模式默认给超级管理员权限
+          roles: ['super_admin'], // 测试模式默认给超级管理员权限
           company: 'sanheng_jiliang',
           is_active: true,
         })
@@ -112,6 +112,19 @@ export class AuthService {
       user = newUser;
     } else {
       user = users;
+      // 兼容旧数据：如果用户没有roles字段，从role迁移
+      if (!user.roles || user.roles.length === 0) {
+        const { data: updatedUser, error: updateError } = await client
+          .from('users')
+          .update({ roles: [user.role] })
+          .eq('id', user.id)
+          .select()
+          .single();
+
+        if (!updateError) {
+          user = updatedUser;
+        }
+      }
     }
 
     // 生成 token
@@ -125,7 +138,7 @@ export class AuthService {
         name: user.name,
         phone: user.phone,
         avatarUrl: user.avatar_url,
-        role: user.role,
+        roles: user.roles || [],
         company: user.company,
       },
     };

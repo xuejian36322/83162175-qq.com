@@ -1,20 +1,18 @@
 import { pgTable, serial, timestamp, varchar, integer, text, boolean, numeric, jsonb, index, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
-// 角色枚举
+// 角色枚举（新需求：8个角色，支持一人多角色）
 export const userRoleEnum = pgEnum("user_role", [
-  "company_admin",        // 公司管理员
+  "super_admin",          // 超级管理员（张宇）
+  "testing_manager",       // 检测负责人（袁昭）
+  "engineering_manager",  // 工程负责人（袁勃，兼业务经理）
   "finance",              // 财务
-  "engineering_director", // 工程部负责人
-  "testing_director",     // 检测部负责人
-  "certificate_manager",  // 检测证书管理员
-  "business_assistant",   // 业务助理
-  "engineering_business_1", // 工程公司业务1部
-  "engineering_business_2", // 工程公司业务2部
-  "metrology_business_1",   // 计量公司业务1部
-  "installer",             // 安装工
-  "tester"                 // 检测员
+  "business_manager",     // 业务经理（肖兴涛、陈俭等）
+  "testing_worker",       // 检测人员
+  "installation_worker",  // 安装人员
+  "certificate_maker",    // 证书编制人员
 ])
+
 
 export const healthCheck = pgTable("health_check", {
   id: serial().notNull(),

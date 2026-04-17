@@ -16,10 +16,11 @@ import {
   CircleCheck,
   LogOut,
   Bell,
+  MapPin,
 } from 'lucide-react-taro'
 import {
-  getCurrentRole,
-  getCurrentRoleName,
+  getCurrentRoles,
+  getCurrentRoleNames,
   getCurrentUser,
   canCreateOrder,
   canViewMyTasks,
@@ -29,6 +30,8 @@ import {
   canApproveExpense,
   canManageCertificates,
   canReviewReport,
+  canLockOrderOnMap,
+  UserRole,
 } from '@/utils/permission'
 
 // 功能入口配置
@@ -44,7 +47,7 @@ interface FunctionItem {
 // 获取功能入口列表
 function getFunctionItems(): FunctionItem[] {
   const items: FunctionItem[] = [
-    // 订单管理（业务人员）
+    // 创建订单（业务经理、工程负责人）
     {
       id: 'order_create',
       name: '创建订单',
@@ -53,7 +56,16 @@ function getFunctionItems(): FunctionItem[] {
       route: '/pages/order-create/index',
       permission: canCreateOrder,
     },
-    // 我的任务（执行人员）
+    // 地图标点（检测人员、安装人员）
+    {
+      id: 'map_lock',
+      name: '地图标点',
+      icon: MapPin,
+      color: '#52c41a',
+      route: '/pages/map-lock/index',
+      permission: canLockOrderOnMap,
+    },
+    // 我的任务（检测人员、安装人员）
     {
       id: 'my_tasks',
       name: '我的任务',
@@ -62,7 +74,7 @@ function getFunctionItems(): FunctionItem[] {
       route: '/pages/my-tasks/index',
       permission: canViewMyTasks,
     },
-    // 用户管理（公司管理员）
+    // 用户管理（超级管理员）
     {
       id: 'user_management',
       name: '用户管理',
@@ -71,7 +83,7 @@ function getFunctionItems(): FunctionItem[] {
       route: '/pages/users/index',
       permission: canManageUsers,
     },
-    // 数据统计（管理员、财务、负责人）
+    // 数据统计（管理员、财务、负责人、业务经理）
     {
       id: 'statistics',
       name: '数据统计',
@@ -80,7 +92,7 @@ function getFunctionItems(): FunctionItem[] {
       route: '/pages/statistics/index',
       permission: canViewStatistics,
     },
-    // 开票申请（财务）
+    // 开票申请（财务、业务经理）
     {
       id: 'invoice',
       name: '开票申请',
@@ -98,7 +110,7 @@ function getFunctionItems(): FunctionItem[] {
       route: '/pages/expense-approval/index',
       permission: canApproveExpense,
     },
-    // 工程管理（工程部负责人）
+    // 工程管理（工程负责人）
     {
       id: 'engineering',
       name: '工程管理',
@@ -106,11 +118,11 @@ function getFunctionItems(): FunctionItem[] {
       color: '#1890ff',
       route: '/pages/engineering/index',
       permission: () => {
-        const role = getCurrentRole()
-        return role === 'company_admin' || role === 'engineering_director'
+        const roles = getCurrentRoles()
+        return roles.includes(UserRole.ENGINEERING_MANAGER)
       },
     },
-    // 检测管理（检测部负责人）
+    // 检测管理（检测负责人）
     {
       id: 'testing',
       name: '检测管理',
@@ -118,11 +130,11 @@ function getFunctionItems(): FunctionItem[] {
       color: '#52c41a',
       route: '/pages/testing/index',
       permission: () => {
-        const role = getCurrentRole()
-        return role === 'company_admin' || role === 'testing_director'
+        const roles = getCurrentRoles()
+        return roles.includes(UserRole.TESTING_MANAGER)
       },
     },
-    // 证书管理（证书管理员）
+    // 证书管理（证书编制人员、超级管理员）
     {
       id: 'certificates',
       name: '证书管理',
@@ -131,7 +143,7 @@ function getFunctionItems(): FunctionItem[] {
       route: '/pages/certificates/index',
       permission: canManageCertificates,
     },
-    // 报告审核（检测部负责人、证书管理员）
+    // 报告审核（检测负责人、证书编制人员、超级管理员）
     {
       id: 'report_review',
       name: '报告审核',
@@ -140,7 +152,7 @@ function getFunctionItems(): FunctionItem[] {
       route: '/pages/report-review/index',
       permission: canReviewReport,
     },
-    // 系统设置（公司管理员）
+    // 系统设置（超级管理员）
     {
       id: 'settings',
       name: '系统设置',
@@ -148,8 +160,8 @@ function getFunctionItems(): FunctionItem[] {
       color: '#8c8c8c',
       route: '/pages/settings/index',
       permission: () => {
-        const role = getCurrentRole()
-        return role === 'company_admin'
+        const roles = getCurrentRoles()
+        return roles.includes(UserRole.SUPER_ADMIN)
       },
     },
   ]
@@ -159,17 +171,17 @@ function getFunctionItems(): FunctionItem[] {
 }
 
 export default function IndexPage() {
-  const currentRole = getCurrentRole()
-  const currentRoleName = getCurrentRoleName()
+  const currentRoles = getCurrentRoles()
+  const currentRoleName = getCurrentRoleNames()
   const userInfo = getCurrentUser()
   const functionItems = getFunctionItems()
 
   useEffect(() => {
     // 检查是否已登录
-    if (!currentRole) {
+    if (currentRoles.length === 0) {
       Taro.reLaunch({ url: '/pages/login/index' })
     }
-  }, [currentRole])
+  }, [currentRoles])
 
   const handleNavigate = (route: string) => {
     Taro.navigateTo({ url: route })
