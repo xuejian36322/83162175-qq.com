@@ -148,6 +148,20 @@ export default function OrderCreatePage() {
 
   // 获取当前位置
   const handleChooseLocation = () => {
+    // 检测平台环境
+    const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP || Taro.getEnv() === Taro.ENV_TYPE.TT
+
+    if (!isWeapp) {
+      // H5 环境提示
+      Taro.showToast({
+        title: '定位功能仅在小程序中可用',
+        icon: 'none',
+        duration: 2000,
+      })
+      return
+    }
+
+    // 小程序环境下调用定位
     Taro.chooseLocation({
       success: (res) => {
         setFormData((prev) => ({
@@ -160,8 +174,9 @@ export default function OrderCreatePage() {
       fail: (err) => {
         console.error('选择位置失败:', err)
         Taro.showToast({
-          title: '选择位置失败',
+          title: '选择位置失败，请手动输入地址',
           icon: 'none',
+          duration: 2000,
         })
       }
     })
@@ -301,12 +316,15 @@ export default function OrderCreatePage() {
           </View>
 
           <View>
-            <Text className="block text-sm text-gray-600 mb-2">地址</Text>
+            <View className="flex items-center justify-between mb-2">
+              <Text className="block text-sm text-gray-600">地址</Text>
+              <Text className="text-xs text-gray-400">H5环境可手动输入</Text>
+            </View>
             <View className="flex gap-2">
               <View className="flex-1 bg-gray-50 rounded-xl px-4 py-3">
                 <Input
                   className="w-full bg-transparent"
-                  placeholder="请选择地址"
+                  placeholder="请输入或选择地址"
                   value={formData.address}
                   onInput={(e) => setFormData({ ...formData, address: e.detail.value })}
                 />
