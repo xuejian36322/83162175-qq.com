@@ -1,6 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { UserRoleEnum } from '../storage/database/shared/schema';
+import { userRoleEnum } from '../../storage/database/shared/schema';
 
 /**
  * 角色守卫 - 用于保护需要特定角色的路由
@@ -17,13 +17,13 @@ export class RolesGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     // 获取装饰器中定义的角色要求
-    const requiredRoles = this.reflector.getAllAndOverride<UserRoleEnum[]>('roles', [
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>('roles', [
       context.getHandler(),
       context.getClass(),
     ]);
 
     // 如果没有定义角色要求，允许访问
-    if (!requiredRoles) {
+    if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
 
