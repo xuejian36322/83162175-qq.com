@@ -81,7 +81,7 @@ export default function MapLockPage() {
             const lockRes = await Network.request({
               url: '/api/business-orders/lock',
               method: 'POST',
-              data: { orderId },
+              data: { orderId, userId: currentUser?.id },
             })
 
             console.log('锁定订单响应:', lockRes)
@@ -120,7 +120,7 @@ export default function MapLockPage() {
             const unlockRes = await Network.request({
               url: '/api/business-orders/unlock',
               method: 'POST',
-              data: { orderId },
+              data: { orderId, userId: currentUser?.id },
             })
 
             console.log('解锁订单响应:', unlockRes)

@@ -7,6 +7,7 @@ export default defineAppConfig({
     'pages/users/index',
     'pages/my-tasks/index',
     'pages/map-lock/index',
+    'pages/order-execution/index',
   ],
   window: {
     backgroundTextStyle: 'light',
