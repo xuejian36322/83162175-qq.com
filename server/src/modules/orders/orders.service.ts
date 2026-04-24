@@ -1,107 +1,137 @@
 import { Injectable } from '@nestjs/common';
 import { getSupabaseClient } from '../../storage/database/supabase-client';
 
-interface CreateOrderDto {
-  orderDate: string;
-  customerName: string;
-  invoiceCompanyName?: string;
-  reportName?: string;
-  // 兼容旧字段（已废弃）
-  businessType?: string;
-  quantity?: number;
-  unitPrice?: string;
-  // 新字段：多业务类型支持
-  businessTypes?: Array<{
-    businessTypeId: string;
-    businessTypeName: string;
-    quantity: number;
-    unitPrice: number;
-    contractAmount: number;
-  }>;
-  contractAmount: string | number;
-  actualAmount?: string;
-  commissionStandard?: string;
-  commissionFee?: string;
-  thirdPartyCollection?: string;
-  transportFee?: string;
-  taxFee?: string;
-  deposit?: string;
-  laborFee?: string;
-  laborFeeRemaining?: string;
-  managerId: string;
-  sourceUserId?: string;
-  executor1Id?: string;
-  executor2Id?: string;
-  executionDate?: string;
-  commissionDate?: string;
-  paymentDate?: string;
-  paymentMethod: string;
-  status: string;
-  reportType?: string;
-  testResult?: string;
-  contactPerson?: string;
-  contactPhone?: string;
-  address?: string;
-  locationLatitude?: string;
-  locationLongitude?: string;
-  trackingNumber?: string;
-  remarks?: string;
-  companyName: string;
-}
-
 @Injectable()
 export class OrdersService {
   /**
    * 创建订单（支持多业务类型）
    */
-  async createOrder(dto: CreateOrderDto) {
+  async createOrder(orderData: {
+    orderNo: string;
+    orderDate: string;
+    customerName: string;
+    invoiceCompanyName?: string;
+    reportName?: string;
+    company: string;
+    contractAmount: number;
+    actualAmount?: string;
+    commissionStandard?: string;
+    commissionFee?: string;
+    thirdPartyCollection?: string;
+    transportFee?: string;
+    taxFee?: string;
+    deposit?: string;
+    laborFee?: string;
+    laborFeeRemaining?: string;
+    sourceUserId?: string;
+    executor1Id?: string;
+    executor2Id?: string;
+    executionDate?: string;
+    commissionDate?: string;
+    paymentDate?: string;
+    paymentMethod: string;
+    reportType?: string;
+    testResult?: string;
+    contactPerson?: string;
+    contactPhone?: string;
+    address?: string;
+    locationLatitude?: string;
+    locationLongitude?: string;
+    trackingNumber?: string;
+    remarks?: string;
+    managerId: string;
+    businessTypes: Array<{
+      businessTypeId: string;
+      businessTypeName: string;
+      quantity: number;
+      unitPrice: number;
+      contractAmount: number;
+    }>;
+  }) {
     const client = getSupabaseClient();
 
-    // 生成订单号
-    const orderNo = 'ORD' + Date.now();
+    const {
+      orderNo,
+      orderDate,
+      customerName,
+      invoiceCompanyName,
+      reportName,
+      company,
+      contractAmount,
+      actualAmount,
+      commissionStandard,
+      commissionFee,
+      thirdPartyCollection,
+      transportFee,
+      taxFee,
+      deposit,
+      laborFee,
+      laborFeeRemaining,
+      sourceUserId,
+      executor1Id,
+      executor2Id,
+      executionDate,
+      commissionDate,
+      paymentDate,
+      paymentMethod,
+      reportType,
+      testResult,
+      contactPerson,
+      contactPhone,
+      address,
+      locationLatitude,
+      locationLongitude,
+      trackingNumber,
+      remarks,
+      managerId,
+      businessTypes,
+    } = orderData;
 
-    // 插入订单主表数据
-    const { data: orderData, error: orderError } = await client
+    // 验证业务类型
+    if (!businessTypes || businessTypes.length === 0) {
+      throw new Error('请至少选择一种业务类型');
+    }
+
+    // 创建订单主记录
+    const { data: order, error: orderError } = await client
       .from('business_orders')
       .insert({
         order_no: orderNo,
-        order_date: dto.orderDate,
-        customer_name: dto.customerName,
-        invoice_company_name: dto.invoiceCompanyName,
-        report_name: dto.reportName,
-        // 兼容旧字段（如果传了单个业务类型，则保留）
-        business_type: dto.businessType || (dto.businessTypes?.[0]?.businessTypeName),
-        quantity: dto.quantity || (dto.businessTypes?.[0]?.quantity) || 1,
-        unit_price: dto.unitPrice || (dto.businessTypes?.[0]?.unitPrice?.toString()) || '0',
-        contract_amount: dto.contractAmount.toString(),
-        actual_amount: dto.actualAmount,
-        commission_standard: dto.commissionStandard,
-        commission_fee: dto.commissionFee,
-        third_party_collection: dto.thirdPartyCollection,
-        transport_fee: dto.transportFee,
-        tax_fee: dto.taxFee,
-        deposit: dto.deposit,
-        labor_fee: dto.laborFee,
-        labor_fee_remaining: dto.laborFeeRemaining,
-        manager_id: dto.managerId,
-        source_user_id: dto.sourceUserId,
-        executor1_id: dto.executor1Id,
-        executor2_id: dto.executor2Id,
-        execution_date: dto.executionDate,
-        commission_date: dto.commissionDate,
-        payment_date: dto.paymentDate,
-        payment_method: dto.paymentMethod,
-        status: dto.status,
-        report_type: dto.reportType,
-        test_result: dto.testResult,
-        contact_person: dto.contactPerson,
-        contact_phone: dto.contactPhone,
-        address: dto.address,
-        location_latitude: dto.locationLatitude,
-        location_longitude: dto.locationLongitude,
-        tracking_number: dto.trackingNumber,
-        remarks: dto.remarks,
-        company: dto.companyName,
+        order_date: orderDate,
+        customer_name: customerName,
+        invoice_company_name: invoiceCompanyName,
+        report_name: reportName,
+        business_type: businessTypes[0].businessTypeName, // 主业务类型
+        quantity: businessTypes.reduce((sum, item) => sum + item.quantity, 0),
+        contract_amount: contractAmount,
+        actual_amount: actualAmount,
+        commission_standard: commissionStandard,
+        commission_fee: commissionFee,
+        third_party_collection: thirdPartyCollection,
+        transport_fee: transportFee,
+        tax_fee: taxFee,
+        deposit: deposit,
+        labor_fee: laborFee,
+        labor_fee_remaining: laborFeeRemaining,
+        manager_id: managerId,
+        source_user_id: sourceUserId,
+        executor1_id: executor1Id,
+        executor2_id: executor2Id,
+        execution_date: executionDate,
+        commission_date: commissionDate,
+        payment_date: paymentDate,
+        payment_method: paymentMethod,
+        report_type: reportType,
+        test_result: testResult,
+        contact_person: contactPerson,
+        contact_phone: contactPhone,
+        address: address,
+        location_latitude: locationLatitude,
+        location_longitude: locationLongitude,
+        tracking_number: trackingNumber,
+        remarks: remarks,
+        company: company,
+        status: 'pending',
       })
       .select()
       .single();
@@ -110,187 +140,164 @@ export class OrdersService {
       throw new Error(`创建订单失败: ${orderError.message}`);
     }
 
-    // 如果有多业务类型，插入业务类型关联表
-    if (dto.businessTypes && dto.businessTypes.length > 0) {
-      const businessTypeItems = dto.businessTypes.map((bt) => ({
-        order_id: orderData.id,
-        business_type_id: bt.businessTypeId,
-        business_type_name: bt.businessTypeName,
-        quantity: bt.quantity,
-        unit_price: bt.unitPrice.toString(),
-        contract_amount: bt.contractAmount.toString(),
-      }));
+    // 创建订单业务类型关联记录
+    const orderBusinessTypes = businessTypes.map(item => ({
+      order_id: order.id,
+      business_type_id: item.businessTypeId,
+      business_type_name: item.businessTypeName,
+      quantity: item.quantity,
+      unit_price: item.unitPrice,
+      contract_amount: item.contractAmount,
+    }));
 
-      const { error: btError } = await client
-        .from('order_business_types')
-        .insert(businessTypeItems);
+    const { error: businessTypesError } = await client
+      .from('order_business_types')
+      .insert(orderBusinessTypes);
 
-      if (btError) {
-        // 如果插入业务类型失败，删除已创建的订单
-        await client.from('business_orders').delete().eq('id', orderData.id);
-        throw new Error(`创建业务类型失败: ${btError.message}`);
-      }
+    if (businessTypesError) {
+      // 如果业务类型插入失败，删除已创建的订单
+      await client
+        .from('business_orders')
+        .delete()
+        .eq('id', order.id);
+      throw new Error(`创建订单业务类型失败: ${businessTypesError.message}`);
     }
 
-    return orderData;
+    return order;
   }
 
   /**
-   * 获取订单列表（包含业务类型详情）
+   * 获取订单列表
    */
-  async getOrderList(params: {
-    page?: number;
-    pageSize?: number;
-    status?: string;
+  async getOrders(filters?: {
     company?: string;
-    keyword?: string;
+    status?: string;
+    managerId?: string;
+    customerName?: string;
   }) {
     const client = getSupabaseClient();
 
-    const { page = 1, pageSize = 20, status, company, keyword } = params;
-
     let query = client
       .from('business_orders')
-      .select('*', { count: 'exact' })
-      .order('order_date', { ascending: false });
+      .select(`
+        id,
+        order_no,
+        order_date,
+        customer_name,
+        business_type,
+        quantity,
+        contract_amount,
+        commission_fee,
+        status,
+        company,
+        created_at,
+        users!business_orders_manager_id_fkey (
+          id,
+          name
+        )
+      `)
+      .order('created_at', { ascending: false });
 
-    if (status) {
-      query = query.eq('status', status);
+    if (filters?.company) {
+      query = query.eq('company', filters.company);
     }
 
-    if (company) {
-      query = query.eq('company', company);
+    if (filters?.status) {
+      query = query.eq('status', filters.status);
     }
 
-    if (keyword) {
-      query = query.or(`customer_name.ilike.%${keyword}%,contact_person.ilike.%${keyword}%,contact_phone.ilike.%${keyword}%`);
+    if (filters?.managerId) {
+      query = query.eq('manager_id', filters.managerId);
     }
 
-    // 分页
-    const offset = (page - 1) * pageSize;
-    query = query.range(offset, offset + pageSize - 1);
+    if (filters?.customerName) {
+      query = query.ilike('customer_name', `%${filters.customerName}%`);
+    }
 
-    const { data, error, count } = await query;
+    const { data, error } = await query;
 
     if (error) {
       throw new Error(`获取订单列表失败: ${error.message}`);
     }
 
-    return {
-      data,
-      total: count || 0,
-      page,
-      pageSize,
-      totalPages: Math.ceil((count || 0) / pageSize),
-    };
+    return data || [];
   }
 
   /**
-   * 获取订单详情（包含业务类型详情）
+   * 获取订单详情（包含业务类型列表）
    */
   async getOrderDetail(id: string) {
     const client = getSupabaseClient();
 
-    // 获取订单基本信息
-    const { data: orderData, error: orderError } = await client
+    // 获取订单主信息
+    const { data: order, error: orderError } = await client
       .from('business_orders')
-      .select('*')
+      .select(`
+        *,
+        users!business_orders_manager_id_fkey (
+          id,
+          name
+        ),
+        users!business_orders_source_user_id_fkey (
+          id,
+          name
+        ),
+        users!business_orders_executor1_id_fkey (
+          id,
+          name
+        ),
+        users!business_orders_executor2_id_fkey (
+          id,
+          name
+        )
+      `)
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (orderError) {
       throw new Error(`获取订单详情失败: ${orderError.message}`);
     }
 
-    // 获取业务类型详情
-    const { data: businessTypes, error: btError } = await client
+    if (!order) {
+      return null;
+    }
+
+    // 获取订单业务类型列表
+    const { data: businessTypes, error: businessTypesError } = await client
       .from('order_business_types')
       .select('*')
       .eq('order_id', id);
 
-    if (btError) {
-      throw new Error(`获取业务类型失败: ${btError.message}`);
+    if (businessTypesError) {
+      throw new Error(`获取业务类型列表失败: ${businessTypesError.message}`);
     }
 
     return {
-      ...orderData,
+      ...order,
       businessTypes: businessTypes || [],
     };
   }
 
   /**
-   * 更新订单
+   * 更新订单状态
    */
-  async updateOrder(id: string, dto: Partial<CreateOrderDto>) {
+  async updateOrderStatus(id: string, status: string) {
     const client = getSupabaseClient();
-
-    const updateData: any = {
-      updated_at: new Date().toISOString(),
-    };
-
-    if (dto.customerName) updateData.customer_name = dto.customerName;
-    if (dto.invoiceCompanyName) updateData.invoice_company_name = dto.invoiceCompanyName;
-    if (dto.reportName) updateData.report_name = dto.reportName;
-    if (dto.businessType) updateData.business_type = dto.businessType;
-    if (dto.quantity) updateData.quantity = dto.quantity;
-    if (dto.unitPrice) updateData.unit_price = dto.unitPrice;
-    if (dto.contractAmount) updateData.contract_amount = dto.contractAmount.toString();
-    if (dto.actualAmount) updateData.actual_amount = dto.actualAmount;
-    if (dto.commissionStandard) updateData.commission_standard = dto.commissionStandard;
-    if (dto.commissionFee) updateData.commission_fee = dto.commissionFee;
-    if (dto.thirdPartyCollection) updateData.third_party_collection = dto.thirdPartyCollection;
-    if (dto.transportFee) updateData.transport_fee = dto.transportFee;
-    if (dto.taxFee) updateData.tax_fee = dto.taxFee;
-    if (dto.deposit) updateData.deposit = dto.deposit;
-    if (dto.laborFee) updateData.labor_fee = dto.laborFee;
-    if (dto.laborFeeRemaining) updateData.labor_fee_remaining = dto.laborFeeRemaining;
-    if (dto.executor1Id) updateData.executor1_id = dto.executor1Id;
-    if (dto.executor2Id) updateData.executor2_id = dto.executor2Id;
-    if (dto.executionDate) updateData.execution_date = dto.executionDate;
-    if (dto.commissionDate) updateData.commission_date = dto.commissionDate;
-    if (dto.paymentDate) updateData.payment_date = dto.paymentDate;
-    if (dto.paymentMethod) updateData.payment_method = dto.paymentMethod;
-    if (dto.status) updateData.status = dto.status;
-    if (dto.reportType) updateData.report_type = dto.reportType;
-    if (dto.testResult) updateData.test_result = dto.testResult;
-    if (dto.contactPerson) updateData.contact_person = dto.contactPerson;
-    if (dto.contactPhone) updateData.contact_phone = dto.contactPhone;
-    if (dto.address) updateData.address = dto.address;
-    if (dto.locationLatitude) updateData.location_latitude = dto.locationLatitude;
-    if (dto.locationLongitude) updateData.location_longitude = dto.locationLongitude;
-    if (dto.trackingNumber) updateData.tracking_number = dto.trackingNumber;
-    if (dto.remarks) updateData.remarks = dto.remarks;
-    if (dto.companyName) updateData.company = dto.companyName;
 
     const { data, error } = await client
       .from('business_orders')
-      .update(updateData)
+      .update({
+        status,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', id)
       .select()
       .single();
 
     if (error) {
-      throw new Error(`更新订单失败: ${error.message}`);
+      throw new Error(`更新订单状态失败: ${error.message}`);
     }
 
     return data;
-  }
-
-  /**
-   * 删除订单
-   */
-  async deleteOrder(id: string) {
-    const client = getSupabaseClient();
-
-    const { error } = await client
-      .from('business_orders')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      throw new Error(`删除订单失败: ${error.message}`);
-    }
-
-    return { success: true };
   }
 }

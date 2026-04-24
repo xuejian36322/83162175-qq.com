@@ -1,6 +1,5 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { userRoleEnum } from '../../storage/database/shared/schema';
 
 /**
  * 角色守卫 - 用于保护需要特定角色的路由

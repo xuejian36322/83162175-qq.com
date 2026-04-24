@@ -33,19 +33,17 @@ export class OrdersController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async getOrderList(
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
     @Query('status') status?: string,
     @Query('company') company?: string,
-    @Query('keyword') keyword?: string,
+    @Query('managerId') managerId?: string,
+    @Query('customerName') customerName?: string,
   ) {
     try {
-      const result = await this.ordersService.getOrderList({
-        page: page ? parseInt(page) : 1,
-        pageSize: pageSize ? parseInt(pageSize) : 20,
+      const result = await this.ordersService.getOrders({
         status,
         company,
-        keyword,
+        managerId,
+        customerName,
       });
 
       return {
@@ -70,6 +68,13 @@ export class OrdersController {
   async getOrderDetail(@Param('id') id: string) {
     try {
       const order = await this.ordersService.getOrderDetail(id);
+      if (!order) {
+        return {
+          code: 404,
+          msg: '订单不存在',
+          data: null,
+        };
+      }
       return {
         code: 200,
         msg: '获取成功',
@@ -85,13 +90,13 @@ export class OrdersController {
   }
 
   /**
-   * 更新订单
+   * 更新订单状态
    */
-  @Put(':id')
+  @Put(':id/status')
   @HttpCode(HttpStatus.OK)
-  async updateOrder(@Param('id') id: string, @Body() body: any) {
+  async updateOrderStatus(@Param('id') id: string, @Body() body: { status: string }) {
     try {
-      const order = await this.ordersService.updateOrder(id, body);
+      const order = await this.ordersService.updateOrderStatus(id, body.status);
       return {
         code: 200,
         msg: '更新成功',
@@ -101,28 +106,6 @@ export class OrdersController {
       return {
         code: 500,
         msg: error.message || '更新失败',
-        data: null,
-      };
-    }
-  }
-
-  /**
-   * 删除订单
-   */
-  @Delete(':id')
-  @HttpCode(HttpStatus.OK)
-  async deleteOrder(@Param('id') id: string) {
-    try {
-      await this.ordersService.deleteOrder(id);
-      return {
-        code: 200,
-        msg: '删除成功',
-        data: { success: true },
-      };
-    } catch (error) {
-      return {
-        code: 500,
-        msg: error.message || '删除失败',
         data: null,
       };
     }
