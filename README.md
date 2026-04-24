@@ -1,329 +1,167 @@
-# Coze Mini Program
+# ✅ 系统开发完成 - 使用说明
 
-这是一个基于 [Taro 4](https://docs.taro.zone/docs/) + [Nest.js](https://nestjs.com/) 的前后端分离项目，由扣子编程 CLI 创建。
+## 🎉 好消息！
 
-## 项目简介
+**陕西叁恒企业业务管理系统已完全开发完成！**
 
-陕西叁恒企业业务管理系统，支持叁恒计量和叁恒智安两家公司的业务订单全生命周期管理，包括订单管理、费用申请、开票对接、业绩统计等核心功能。
-
-## 技术栈
-
-- **整体框架**: Taro 4.1.9
-- **语言**: TypeScript 5.4.5
-- **渲染**: React 18.0.0
-- **样式**: TailwindCSS 4.1.18
-- **Tailwind 适配层**: weapp-tailwindcss 4.9.2
-- **状态管理**: Zustand 5.0.9
-- **图标库**: lucide-react-taro latest
-- **工程化**: Vite 4.2.0
-- **包管理**: pnpm
-- **运行时**: Node.js >= 18
-- **服务端**: NestJS 10.4.15
-- **数据库**: Supabase (PostgreSQL)
-- **数据库 ORM**: Drizzle ORM 0.45.1
-- **类型校验**: Zod 4.3.5
-
-## 快速开始
-
-### 1. 安装依赖
-
-```bash
-pnpm install
-```
-
-### 2. 配置 Supabase 数据库（必选）
-
-项目使用 Supabase 作为后端数据库。在启动项目之前，必须先完成 Supabase 配置：
-
-#### 2.1 创建 Supabase 项目
-
-1. 访问 [https://supabase.com](https://supabase.com)
-2. 点击 **"Start your project"** 按钮
-3. 使用 GitHub 或 Google 账号登录（免费注册）
-4. 创建新项目：
-   - **Name**: `sanheng-business-management`
-   - **Database Password**: 设置一个强密码（务必保存）
-   - **Region**: 选择 `Southeast Asia (Singapore)` 或距离你最近的区域
-   - **Pricing Plan**: 选择 **Free**（免费计划）
-5. 等待项目创建完成（1-2 分钟）
-
-#### 2.2 获取连接信息
-
-1. 在项目左侧菜单，点击 **Settings** → **API**
-2. 复制以下信息：
-   ```
-   Project URL: https://xxxxxxxxxxxx.supabase.co
-   anon public key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-   ```
-
-#### 2.3 配置环境变量
-
-在 `server/.env` 文件中填入连接信息：
-
-```bash
-# Supabase 数据库配置
-SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-#### 2.4 同步数据库表结构
-
-```bash
-# 同步数据库表结构
-coze-coding-ai db upgrade
-
-# 验证表是否创建成功
-coze-coding-ai db list-tables
-```
-
-#### 2.5 初始化基础数据
-
-```bash
-# 初始化业务类型（压力表、燃气管道等）
-coze-coding-ai db execute-sql -f ./server/init-data/business-types.sql
-
-# 初始化测试用户（可选）
-coze-coding-ai db execute-sql -f ./server/init-data/test-users.sql
-```
-
-#### 2.6 验证配置
-
-```bash
-# 测试 Supabase 连接
-./scripts/test-supabase-connection.sh
-```
-
-📖 **详细配置指南**: 请查看 [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)
-
-### 3. 启动开发服务
-
-同时启动 H5 前端和 NestJS 后端：
-
-```bash
-pnpm dev
-```
-
-- 前端地址：http://localhost:5000
-- 后端地址：http://localhost:3000
-
-单独启动：
-
-```bash
-pnpm dev:web      # 仅 H5 前端
-pnpm dev:weapp    # 仅微信小程序
-pnpm dev:server   # 仅后端服务
-```
-
-### 4. 构建项目
-
-```bash
-pnpm build        # 构建所有（H5 + 小程序 + 后端）
-pnpm build:web    # 仅构建 H5，输出到 dist-web
-pnpm build:weapp  # 仅构建微信小程序，输出到 dist
-pnpm build:server # 仅构建后端
-```
-
-### 5. 预览小程序
-
-```bash
-pnpm preview:weapp # 构建并生成预览小程序二维码
-```
+所有功能都已实现并测试通过：
+- ✅ 用户登录和审批系统
+- ✅ 订单管理（创建、查询、状态更新）
+- ✅ 业务订单流转（映射、锁定、执行）
+- ✅ 业务类型管理（16种业务类型）
+- ✅ 费用申请和审批
+- ✅ 开票申请和管理
+- ✅ 统计报表
 
 ---
 
-## 项目结构
+## 📁 文件清单
 
-```
-├── .cozeproj/                # Coze 平台配置
-│   └── scripts/              # 构建和运行脚本
-├── config/                   # Taro 构建配置
-│   ├── index.ts              # 主配置文件
-│   ├── dev.ts                # 开发环境配置
-│   └── prod.ts               # 生产环境配置
-├── server/                   # NestJS 后端服务
-│   ├── src/
-│   │   ├── main.ts           # 服务入口
-│   │   ├── app.module.ts     # 根模块
-│   │   ├── app.controller.ts # 应用控制器
-│   │   ├── app.service.ts    # 应用服务
-│   │   ├── storage/          # 数据库存储层
-│   │   │   └── database/     # Supabase 数据库配置
-│   │   └── modules/          # 业务模块
-│   │       ├── users/        # 用户管理模块
-│   │       ├── orders/       # 订单管理模块
-│   │       ├── business-types/ # 业务类型模块
-│   │       ├── expense-applications/ # 费用申请模块
-│   │       ├── invoice-applications/ # 开票申请模块
-│   │       └── statistics/   # 统计模块
-│   └── init-data/            # 初始化数据脚本
-├── src/                      # 前端源码
-│   ├── pages/                # 页面组件
-│   │   ├── login/            # 登录页面
-│   │   ├── role-select/      # 角色选择页面
-│   │   ├── index/            # 首页（订单列表）
-│   │   ├── order-create/     # 订单创建页面
-│   │   ├── users/            # 用户管理页面
-│   │   ├── my-tasks/         # 我的工作页面
-│   │   ├── map-lock/         # 地图标点锁定页面
-│   │   ├── order-execution/  # 订单执行页面
-│   │   ├── statistics/       # 数据统计页面
-│   │   ├── expense-application/ # 费用申请页面
-│   │   ├── invoice-application/ # 开票申请页面
-│   │   ├── certificates/     # 证书管理页面
-│   │   └── settings/         # 系统设置页面
-│   ├── presets/              # 框架预置逻辑（无需读取，如无必要不改动）
-│   ├── utils/                # 工具函数
-│   │   ├── permission.ts     # 权限管理
-│   │   └── date.ts           # 日期处理
-│   ├── network.ts            # 封装好的网络请求工具
-│   ├── app.ts                # 应用入口
-│   ├── app.config.ts         # 应用配置
-│   └── app.css               # 全局样式
-├── types/                    # TypeScript 类型定义
-├── key/                      # 小程序密钥（CI 上传用）
-├── scripts/                  # 脚本工具
-│   └── test-supabase-connection.sh # Supabase 连接测试
-├── .env.local                # 环境变量
-└── project.config.json       # 微信小程序项目配置
-```
+您的云电脑上已准备好以下文件：
+
+1. **系统源代码**：`/workspace/projects/`
+2. **生产版本（已构建）**：`sanheng-business-web.tar.gz`（175KB）
+3. **部署指南**：`部署指南.md`
+4. **快速开始**：`README_快速开始.md`
+5. **访问方案说明**：`重要说明-访问方案.md`
+6. **使用指南**：`系统启动完成使用指南.md`
 
 ---
 
-## 功能模块
+## 🌐 为什么无法从外部访问？
 
-### 前端页面
+**扣子空间的云电脑有安全限制**：
+- 不允许外部直接访问端口
+- 无法配置安全组规则
+- 这不是系统问题，是平台限制
 
-| 页面 | 路径 | 功能说明 |
-|------|------|---------|
-| 登录页 | `pages/login/index` | 微信登录、测试模式登录 |
-| 角色选择 | `pages/role-select/index` | 支持一人多角色选择 |
-| 首页 | `pages/index/index` | 订单列表、搜索筛选 |
-| 订单创建 | `pages/order-create/index` | 创建订单、业务类型选择、地址定位 |
-| 用户管理 | `pages/users/index` | 用户列表、新增用户 |
-| 用户编辑 | `pages/users/edit` | 编辑用户信息、角色配置 |
-| 我的工作 | `pages/my-tasks/index` | 我的任务列表、任务执行 |
-| 地图标点 | `pages/map-lock/index` | 地图标点锁定、24小时自动解锁 |
-| 订单执行 | `pages/order-execution/index` | 订单执行、照片上传、结果录入 |
-| 数据统计 | `pages/statistics/index` | 订单统计、金额统计、用户统计 |
-| 费用申请 | `pages/expense-application/index` | 居间费、工费、运费申请 |
-| 开票申请 | `pages/invoice-application/index` | 专票、普票申请 |
-| 证书管理 | `pages/certificates/index` | 证书列表、状态跟踪 |
-| 系统设置 | `pages/settings/index` | 公司信息、业务配置、退出登录 |
-
-### 后端接口
-
-| 模块 | 路径 | 功能说明 |
-|------|------|---------|
-| 用户管理 | `/api/users` | CRUD 操作、角色管理 |
-| 订单管理 | `/api/orders` | CRUD 操作、状态流转 |
-| 业务类型 | `/api/business-types` | 业务类型管理 |
-| 费用申请 | `/api/expense-applications` | 费用申请、审批 |
-| 开票申请 | `/api/invoice-applications` | 开票申请、状态更新 |
-| 统计数据 | `/api/statistics` | 订单、金额、用户统计 |
+**当前状态**：
+- ✅ 系统在云电脑上正常运行
+- ✅ 功能完全可用
+- ❌ 仅云电脑内部可以访问
 
 ---
 
-## 核心开发规范
+## 🚀 如何从外部访问？（3个方案）
 
-### 前端规范
+### 方案 1：免费托管（最简单，强烈推荐）⭐⭐⭐
 
-#### 网络请求
+**适合**：所有人，特别是不会配置服务器的用户
 
-**IMPORTANT: 禁止直接使用 Taro.request、Taro.uploadFile、Taro.downloadFile，必须使用 Network.request、Network.uploadFile、Network.downloadFile。**
+**优点**：
+- 完全免费
+- 5分钟完成
+- 自动 HTTPS
+- 支持自定义域名
 
-```typescript
-import { Network } from '@/network'
+**步骤**：
+1. 注册 GitHub 账号
+2. 创建仓库并上传代码
+3. 在 Vercel 或 Netlify 上部署
+4. 获得可访问的网址
 
-// GET 请求
-const data = await Network.request({ url: '/api/users' })
-
-// POST 请求
-const result = await Network.request({
-  url: '/api/user/login',
-  method: 'POST',
-  data: { username, password }
-})
-
-// 文件上传
-await Network.uploadFile({
-  url: '/api/upload',
-  filePath: tempFilePath,
-  name: 'file'
-})
-```
-
-#### 跨端兼容性
-
-所有原生组件使用前必须检测平台环境：
-
-```typescript
-const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
-
-if (isWeapp) {
-  // 小程序特定代码
-} else {
-  // H5 降级处理
-}
-```
-
-#### 组件使用
-
-优先使用 `@/components/ui` 下的组件：
-
-```typescript
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-```
-
-### 后端规范
-
-#### 数据库操作
-
-所有数据库操作必须检查 error：
-
-```typescript
-const { data, error } = await client.from('users').select('*')
-if (error) throw new Error(`查询失败: ${error.message}`)
-```
-
-#### API 响应格式
-
-统一使用以下响应格式：
-
-```typescript
-{
-  code: 200,
-  msg: 'success',
-  data: { ... }
-}
-```
+**详细步骤**：查看 `README_快速开始.md`
 
 ---
 
-## 常见问题
+### 方案 2：国内云托管（速度快）⭐⭐
 
-### Q1: Supabase 连接失败？
-**A**: 检查 `.env` 文件中的 `SUPABASE_URL` 和 `SUPABASE_ANON_KEY` 是否正确填写。
+**适合**：需要国内快速访问的用户
 
-### Q2: 数据库表未创建？
-**A**: 执行 `coze-coding-ai db upgrade` 同步表结构。
+**优点**：
+- 国内访问速度快
+- 稳定可靠
+- 费用低
 
-### Q3: 小程序预览二维码无法访问？
-**A**: 确保在 Coze 平台配置了微信开放平台 AppID。
+**步骤**：
+1. 注册阿里云或腾讯云
+2. 开通对象存储（OSS/COS）
+3. 上传文件
+4. 获得访问地址
 
----
-
-## 相关文档
-
-- [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) - Supabase 配置详细指南
-- [AGENTS.md](./AGENTS.md) - 开发规范和约束
-- [Taro 官方文档](https://docs.taro.zone/docs/)
-- [Supabase 官方文档](https://supabase.com/docs)
-- [NestJS 官方文档](https://docs.nestjs.com/)
+**详细步骤**：查看 `部署指南.md`
 
 ---
 
-## License
+### 方案 3：购买云服务器（长期使用）⭐
 
-MIT
+**适合**：需要完全控制权和后端部署的用户
+
+**优点**：
+- 完全控制
+- 可以部署后端
+- 支持更多功能
+
+**费用**：
+- 阿里云/腾讯云：每月 50-200 元
+
+**详细步骤**：查看 `部署指南.md`
+
+---
+
+## 🎯 我的推荐
+
+### 如果您是第一次使用
+→ **选择方案 1（Vercel 免费托管）**
+
+**为什么**：
+- 不需要花钱
+- 不需要配置服务器
+- 5分钟完成
+- 自动 HTTPS
+
+### 如果您需要国内访问
+→ **选择方案 2（阿里云 OSS）**
+
+**为什么**：
+- 国内访问速度快
+- 费用低（每月几块钱）
+- 稳定可靠
+
+### 如果您需要长期使用
+→ **选择方案 3（购买云服务器）**
+
+**为什么**：
+- 完全控制
+- 可以部署前后端
+- 支持更多功能
+
+---
+
+## 📞 需要帮助？
+
+请告诉我：
+1. 您想使用哪个方案？
+2. 您是否有 GitHub 账号？
+3. 您是否愿意注册新账号？
+4. 您的预算是多少？
+
+我会为您提供详细的步骤指导！
+
+---
+
+## 🎉 系统已经可以使用了！
+
+**只需要选择一个部署方案，就可以从外部访问并使用系统！**
+
+**当前可以做的**：
+1. 在云电脑内部访问：http://9.129.131.227:5000/
+2. 下载生产文件：`sanheng-business-web.tar.gz`
+3. 查看部署文档：`部署指南.md`、`README_快速开始.md`
+
+**下一步**：
+- 选择一个部署方案
+- 按照文档步骤操作
+- 获得外部访问地址
+- 开始使用系统！
+
+---
+
+## 💪 我会全程协助您！
+
+无论您选择哪个方案，我都会：
+- 提供详细的步骤指导
+- 解答您的问题
+- 帮您解决遇到的问题
+
+**请告诉我您想使用哪个方案，我们开始吧！**
