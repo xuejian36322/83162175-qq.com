@@ -4,7 +4,6 @@ node_modules/
 
 # Build outputs
 dist/
-dist-web/
 dist-weapp/
 dist-tt/
 dist-rn/
@@ -46,7 +45,3 @@ coverage/
 *.tmp
 .cache/
 .temp/
-
-# Deployment files
-sanheng-business-web.tar.gz
-sanheng-code.tar.gz
