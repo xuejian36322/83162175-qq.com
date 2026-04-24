@@ -1,41 +1,52 @@
 # Dependencies
 node_modules/
 .pnpm-store/
-node-compile-cache/
 
-# Production
+# Build outputs
 dist/
-build/
-dist-*/
+dist-web/
+dist-weapp/
+dist-tt/
+dist-rn/
+.cache/
 
-# Misc
-.DS_Store
+# Environment variables
 .env
-# .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.local
+.env.*.local
 
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
+/tmp/coze-logs/
 
-# Editor directories and files
-.idea/
-.vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Taro specific
-.taro/
-
-# OS X
+# OS files
 .DS_Store
+Thumbs.db
 
-# Key
-# key/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+
+# Misc
+*.tgz
+*.tar.gz
+
+# Temporary files
+*.tmp
+.cache/
+.temp/
+
+# Deployment files
+sanheng-business-web.tar.gz
+sanheng-code.tar.gz
