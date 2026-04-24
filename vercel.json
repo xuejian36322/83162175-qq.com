@@ -1,10 +1,8 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static"
-    }
-  ],
+  "public": true,
+  "ignoreCommand": "true",
+  "installCommand": "true",
+  "buildCommand": "true",
   "outputDirectory": "dist-web"
 }
