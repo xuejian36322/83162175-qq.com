@@ -26,6 +26,33 @@ export default function LoginPage() {
       if (res.data.code === 200) {
         const { token, user } = res.data.data
 
+        // 检查审批状态
+        if (user.approval_status === 'pending') {
+          Taro.setStorageSync('token', token)
+          Taro.setStorageSync('userInfo', user)
+
+          Taro.showModal({
+            title: '等待审批',
+            content: '您的注册申请已提交，请联系管理员（18700999611）审批后才能使用系统',
+            showCancel: false,
+            success: () => {
+              Taro.reLaunch({
+                url: '/pages/login/index',
+              })
+            },
+          })
+          return
+        }
+
+        if (user.approval_status === 'rejected') {
+          Taro.showToast({
+            title: '注册已被拒绝',
+            icon: 'none',
+            duration: 2000,
+          })
+          return
+        }
+
         // 保存 token 和用户信息
         Taro.setStorageSync('token', token)
         Taro.setStorageSync('userInfo', user)

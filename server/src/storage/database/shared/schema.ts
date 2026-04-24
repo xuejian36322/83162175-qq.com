@@ -94,11 +94,21 @@ export const users = pgTable("users", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }),
 	roles: jsonb().default([]),
+	approvalStatus: varchar("approval_status", { length: 20 }).default('pending').notNull(),
+	approvedBy: varchar("approved_by", { length: 36 }),
+	approvedAt: timestamp("approved_at", { withTimezone: true, mode: 'string' }),
+	approvalRemarks: text("approval_remarks"),
 }, (table) => [
 	index("users_company_idx").using("btree", table.company.asc().nullsLast().op("text_ops")),
 	index("users_open_id_idx").using("btree", table.openId.asc().nullsLast().op("text_ops")),
 	index("users_role_idx").using("btree", table.role.asc().nullsLast().op("text_ops")),
+	index("users_approval_status_idx").using("btree", table.approvalStatus.asc().nullsLast().op("text_ops")),
 	unique("users_open_id_unique").on(table.openId),
+	foreignKey({
+			columns: [table.approvedBy],
+			foreignColumns: [users.id],
+			name: "users_approved_by_fkey"
+		}),
 	pgPolicy("users_登录用户可读", { as: "permissive", for: "select", to: ["public"], using: sql`(( SELECT auth.role() AS role) = 'authenticated'::text)` }),
 	pgPolicy("users_登录用户可写入", { as: "permissive", for: "insert", to: ["public"] }),
 	pgPolicy("users_登录用户可更新", { as: "permissive", for: "update", to: ["public"] }),

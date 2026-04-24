@@ -4,12 +4,103 @@ import { getSupabaseClient } from '../../storage/database/supabase-client';
 @Injectable()
 export class UsersService {
   /**
+   * 用户注册（待审批状态）
+   */
+  async registerUser(userData: {
+    openId: string;
+    name: string;
+    phone?: string;
+    avatarUrl?: string;
+    company?: string;
+  }) {
+    const client = getSupabaseClient();
+
+    const { data, error } = await client
+      .from('users')
+      .insert({
+        open_id: userData.openId,
+        name: userData.name,
+        phone: userData.phone,
+        avatar_url: userData.avatarUrl,
+        role: 'business_manager', // 默认角色
+        roles: ['business_manager'],
+        company: userData.company || 'sanheng_jiliang',
+        is_active: true,
+        approval_status: 'pending', // 默认待审批
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`注册失败: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * 获取待审批用户列表
+   */
+  async getPendingUsers() {
+    const client = getSupabaseClient();
+
+    const { data, error } = await client
+      .from('users')
+      .select(`
+        id,
+        open_id,
+        name,
+		phone,
+		avatar_url,
+		company,
+		approval_status,
+		created_at
+      `)
+      .eq('approval_status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`获取待审批用户列表失败: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  /**
+   * 审批用户（通过或拒绝）
+   */
+  async approveUser(userId: string, approverId: string, approved: boolean, remarks?: string) {
+    const client = getSupabaseClient();
+
+    const { data, error } = await client
+      .from('users')
+      .update({
+        approval_status: approved ? 'approved' : 'rejected',
+        approved_by: approverId,
+        approved_at: new Date().toISOString(),
+        approval_remarks: remarks,
+        is_active: approved,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`审批用户失败: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
    * 获取用户列表
    */
   async getUsers(filters?: {
     company?: string;
     role?: string;
     isActive?: boolean;
+    approvalStatus?: string;
   }) {
     const client = getSupabaseClient();
 
@@ -25,6 +116,8 @@ export class UsersService {
         company,
         roles,
         is_active,
+        approval_status,
+        approved_at,
         created_at,
         updated_at
       `)
@@ -40,6 +133,10 @@ export class UsersService {
 
     if (filters?.isActive !== undefined) {
       query = query.eq('is_active', filters.isActive);
+    }
+
+    if (filters?.approvalStatus) {
+      query = query.eq('approval_status', filters.approvalStatus);
     }
 
     const { data, error } = await query;
@@ -69,6 +166,7 @@ export class UsersService {
         company,
         roles,
         is_active,
+        approval_status,
         created_at,
         updated_at
       `)
@@ -100,6 +198,10 @@ export class UsersService {
         company,
         roles,
         is_active,
+        approval_status,
+        approved_by,
+        approved_at,
+        approval_remarks,
         created_at,
         updated_at
       `)
@@ -108,43 +210,6 @@ export class UsersService {
 
     if (error) {
       throw new Error(`获取用户信息失败: ${error.message}`);
-    }
-
-    return data;
-  }
-
-  /**
-   * 创建用户
-   */
-  async createUser(userData: {
-    openId: string;
-    name: string;
-    phone?: string;
-    avatarUrl?: string;
-    role?: string;
-    roles?: string[];
-    company?: string;
-    isActive?: boolean;
-  }) {
-    const client = getSupabaseClient();
-
-    const { data, error } = await client
-      .from('users')
-      .insert({
-        open_id: userData.openId,
-        name: userData.name,
-        phone: userData.phone,
-        avatar_url: userData.avatarUrl,
-        role: userData.role || 'business_manager',
-        roles: userData.roles || [],
-        company: userData.company || 'sanheng_jiliang',
-        is_active: userData.isActive !== undefined ? userData.isActive : true,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`创建用户失败: ${error.message}`);
     }
 
     return data;

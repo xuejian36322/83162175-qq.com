@@ -4,7 +4,7 @@ import { View, Text, ScrollView } from '@tarojs/components'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, Save, LogOut } from 'lucide-react-taro'
+import { ArrowLeft, Save, LogOut, UserCheck, ShieldCheck } from 'lucide-react-taro'
 import { isSuperAdmin } from '@/utils/permission'
 
 export default function SystemSettingsPage() {
@@ -101,6 +101,30 @@ export default function SystemSettingsPage() {
             </View>
           </CardContent>
         </Card>
+
+        {/* 超级管理员专属功能 */}
+        {isSuperAdmin() && (
+          <Card className="mb-4">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldCheck size={18} color="#ef4444" />
+                超级管理员功能
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button
+                className="w-full bg-orange-500 text-white"
+                onClick={() => Taro.navigateTo({ url: '/pages/user-approval/index' })}
+              >
+                <UserCheck size={18} color="#ffffff" />
+                <Text className="ml-2">用户审批管理</Text>
+              </Button>
+              <Text className="block text-xs text-gray-500 text-center">
+                管理新用户注册审批
+              </Text>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="mb-4">
           <CardHeader>

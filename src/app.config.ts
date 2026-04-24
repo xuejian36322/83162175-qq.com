@@ -6,6 +6,7 @@ export default defineAppConfig({
     'pages/order-create/index',
     'pages/users/index',
     'pages/users/edit',
+    'pages/user-approval/index',
     'pages/my-tasks/index',
     'pages/map-lock/index',
     'pages/order-execution/index',
