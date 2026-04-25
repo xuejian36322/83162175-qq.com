@@ -4,5 +4,7 @@
   "ignoreCommand": "true",
   "installCommand": "true",
   "buildCommand": "true",
-  "outputDirectory": "dist-web"
+  "outputDirectory": "dist-web",
+  "cleanUrls": true,
+  "trailingSlash": false
 }
