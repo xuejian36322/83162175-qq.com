@@ -1,0 +1,458 @@
+陕西叁恒企业业务管理系统 - 开发对话记录
+
+日期：2024年
+项目名称：陕西叁恒企业业务管理微信小程序
+GitHub 仓库：https://github.com/xuejian36322/83162175-qq.com
+
+================================================================================
+
+一、项目概述
+
+1.1 项目背景
+用户要求开发陕西叁恒企业业务管理微信小程序，这是一个完整的企业级应用开发项目，包含：
+- 台账管理
+- 业务流转
+- 开票对接
+- 费用申请
+- 业绩统计等核心模块
+
+1.2 技术栈
+- 前端：Taro 4.1.9 + React 18 + TypeScript + Tailwind CSS
+- 后端：NestJS 10.4.15
+- 数据库：Supabase (PostgreSQL) + Drizzle ORM
+- 平台：微信小程序（支持跨端）
+
+================================================================================
+
+二、开发过程记录
+
+2.1 第一阶段：定位问题修复
+
+问题描述：订单录入时定位失败
+
+问题原因：H5 环境下 Taro.chooseLocation 不支持，需要添加平台检测
+
+解决方案：
+- 修改 src/pages/order-create/index.tsx
+- 添加平台判断：Taro.getEnv() === Taro.ENV_TYPE.WEAPP
+- H5 环境显示提示："定位功能仅在小程序中可用"
+
+涉及文件：
+- src/pages/order-create/index.tsx
+
+--------------------------------------------------------------------------------
+
+2.2 第二阶段：后端对接开发
+
+工作内容：
+1. 加载 Supabase 技能
+2. 设计数据库表结构（10 张表）
+3. 创建所有后端接口模块
+4. 修复 schema.ts 中的 TypeScript 错误
+5. 修复 decorator 和 guard 中的未使用导入
+
+涉及文件：
+- server/src/storage/database/shared/schema.ts
+- 后端各模块的 Controller 和 Service 文件
+
+--------------------------------------------------------------------------------
+
+2.3 第三阶段：Supabase 配置
+
+Supabase 连接信息：
+SUPABASE_URL=https://fcndibzroqnztcxaiwui.supabase.co
+SUPABASE_ANON_KEY=sb_publishable_ioLJnPfiZ6Dj_x0MlcGAJg_O3JKyLYU
+
+执行操作：
+- 执行了数据库同步和初始化
+- 创建了 16 个业务类型
+- 创建了 58 个测试用户
+
+--------------------------------------------------------------------------------
+
+2.4 第四阶段：审批系统实现
+
+需求：
+- 超级管理员账户：18700999611，密码 xuejian36322
+- 其他人登录后需要审批
+- 审批管理权给超级管理员
+
+实现内容：
+1. 修改 users 表结构
+   - 新增字段：approval_status、approved_by、approved_at、approval_remarks
+   - 支持审批流程：pending、approved、rejected
+
+2. 创建超级管理员账户脚本
+
+3. 实现用户注册、审批接口
+   - registerUser（注册待审批用户）
+   - getPendingUsers（获取待审批列表）
+   - approveUser（审批用户）
+
+4. 创建用户审批页面（src/pages/user-approval/index.tsx）
+
+5. 修改登录逻辑，未审批用户无法登录
+
+6. 在设置页面添加审批管理入口
+
+涉及文件：
+- server/src/modules/users/users.service.ts
+- server/src/modules/users/users.controller.ts
+- src/pages/user-approval/index.tsx
+- src/pages/login/index.tsx
+- src/pages/settings/index.tsx
+
+--------------------------------------------------------------------------------
+
+2.5 第五阶段：云电脑启动
+
+遇到问题：
+- WebSocket 连接丢失
+- 端口占用（3000、5000）
+
+解决方案：
+- 清理端口：npx kill-port 3000 5000
+- 重启服务：cd /workspace/projects && pnpm dev
+
+--------------------------------------------------------------------------------
+
+2.6 第六阶段：远程访问配置
+
+问题：用户手机和电脑无法访问系统
+
+问题原因：
+- 云电脑的公网 IP：115.190.93.94
+- 内网 IP：9.129.131.227
+- 安全组没有开放 5000 和 3000 端口
+
+尝试的解决方案：
+1. 配置环境变量 PROJECT_DOMAIN=http://9.129.131.227:3000
+2. 尝试使用 localtunnel 内网穿透
+3. 尝试使用 surge 静态托管
+
+最终方案：
+- 选择方案 1：免费托管到 Vercel
+- 构建生产版本并推送到 GitHub
+- 在 Vercel 部署
+
+--------------------------------------------------------------------------------
+
+2.7 第七阶段：GitHub 推送
+
+GitHub 用户信息：
+- 用户名：xuejian36322
+- 仓库地址：https://github.com/xuejian36322/83162175-qq.com
+- 认证方式：Personal Access Token
+
+遇到问题：
+1. GitHub 不支持密码认证
+2. 需要创建 Personal Access Token
+
+解决步骤：
+1. 创建 Token（需要勾选 repo 权限）
+2. 配置远程仓库地址
+3. 推送代码到 GitHub
+
+推送命令：
+cd /workspace/projects
+git remote set-url origin https://<token>@github.com/xuejian36322/83162175-qq.com.git
+git push -u origin main
+
+--------------------------------------------------------------------------------
+
+2.8 第八阶段：Vercel 部署
+
+遇到问题：
+
+1. 问题 1：找不到 Output Directory
+   - 错误信息：Error: No Output Directory named "public" found
+   - 原因：vercel.json 配置缺失
+   - 解决：创建 vercel.json 配置文件
+
+2. 问题 2：better-sqlite3 编译失败
+   - 错误信息：node_modules/better-sqlite3 install: ... compilation failed
+   - 原因：Vercel 不支持原生模块编译
+   - 解决：修改配置，禁用安装和构建命令
+
+3. 问题 3：Root Directory 自动检测为 server
+   - 原因：Vercel 检测到 server 目录
+   - 解决：手动设置 Root Directory 为 .
+
+4. 问题 4：dist-web 目录为空
+   - 原因：构建产物未提交
+   - 解决：重新构建并推送到 GitHub
+
+最终配置：
+{
+  "installCommand": "true",
+  "buildCommand": "true",
+  "outputDirectory": "dist-web"
+}
+
+Vercel 配置要求：
+- Framework Preset: Other
+- Root Directory: . （一个点）
+- Build Command: 留空
+- Install Command: 留空
+- Output Directory: dist-web
+
+================================================================================
+
+三、技术问题总结
+
+3.1 跨端兼容性问题
+
+问题列表：
+1. H5 环境定位功能不支持
+2. Taro 原生 Input 样式 H5 失效
+3. Fixed + Flex 布局 H5 不生效
+
+解决方案：
+- 添加平台检测：Taro.getEnv() === Taro.ENV_TYPE.WEAPP
+- View 包裹 Input，样式放外层
+- 使用 inline style 替代 Tailwind
+
+--------------------------------------------------------------------------------
+
+3.2 数据库问题
+
+问题：schema.ts 缺少 gen_random_uuid 函数定义
+
+解决：
+const gen_random_uuid = () => sql`gen_random_uuid()`
+
+--------------------------------------------------------------------------------
+
+3.3 认证问题
+
+问题：GitHub 不支持密码认证
+
+解决：
+1. 创建 Personal Access Token
+2. 勾选 repo 权限
+3. 使用 Token 替代密码
+
+--------------------------------------------------------------------------------
+
+3.4 部署问题
+
+问题列表：
+1. Output Directory 配置错误
+2. 原生模块编译失败
+3. Root Directory 自动检测错误
+4. 构建产物未推送
+
+解决流程：
+1. 创建 vercel.json 配置文件
+2. 禁用安装和构建命令
+3. 手动设置 Root Directory
+4. 重新构建并推送 dist-web
+
+================================================================================
+
+四、关键命令记录
+
+4.1 开发命令
+
+# 启动开发服务
+cd /workspace/projects && pnpm dev
+
+# 构建前端
+pnpm build:web
+
+# 清理端口
+npx kill-port 3000 5000
+
+# 检查端口
+netstat -tuln | grep -E ':(3000|5000)'
+
+--------------------------------------------------------------------------------
+
+4.2 Git 命令
+
+# 初始化仓库
+git init
+
+# 添加远程仓库
+git remote add origin https://github.com/xuejian36322/83162175-qq.com.git
+
+# 推送代码
+git add .
+git commit -m "Initial commit"
+git push -u origin main
+
+--------------------------------------------------------------------------------
+
+4.3 数据库命令
+
+-- 查询用户
+SELECT id, phone, name, role FROM users WHERE phone = '18700999611';
+
+-- 统计用户角色
+SELECT role, COUNT(*) FROM users GROUP BY role;
+
+================================================================================
+
+五、项目结构
+
+/workspace/projects/
+├── src/                    # 前端源代码
+│   ├── pages/              # 页面
+│   │   ├── index/          # 首页
+│   │   ├── order-create/   # 订单创建
+│   │   ├── user-approval/  # 用户审批
+│   │   ├── login/          # 登录
+│   │   └── settings/       # 设置
+│   ├── components/         # 组件
+│   │   └── ui/             # UI 组件库
+│   ├── network.ts          # 网络请求封装
+│   └── app.config.ts       # 应用配置
+├── server/                 # 后端代码
+│   └── src/                # NestJS 服务端
+│       ├── modules/        # 业务模块
+│       │   ├── auth/       # 认证模块
+│       │   ├── users/      # 用户模块
+│       │   ├── orders/     # 订单模块
+│       │   └── ...
+│       └── main.ts         # 入口文件
+├── dist-web/               # 构建产物（已推送）
+│   ├── index.html
+│   ├── css/
+│   └── js/
+├── vercel.json             # Vercel 配置
+├── .vercelignore           # Vercel 忽略文件
+└── .gitignore              # Git 忽略文件
+
+================================================================================
+
+六、关键配置文件
+
+6.1 vercel.json
+
+{
+  "installCommand": "true",
+  "buildCommand": "true",
+  "outputDirectory": "dist-web"
+}
+
+--------------------------------------------------------------------------------
+
+6.2 .vercelignore
+
+server/
+node_modules/
+.env.local
+
+--------------------------------------------------------------------------------
+
+6.3 .env.local
+
+PROJECT_DOMAIN=http://localhost:3000
+
+================================================================================
+
+七、访问地址
+
+7.1 云电脑（内部访问）
+
+- 前端：http://localhost:5000/
+- 后端：http://localhost:3000/
+
+--------------------------------------------------------------------------------
+
+7.2 GitHub 仓库
+
+- https://github.com/xuejian36322/83162175-qq.com
+
+--------------------------------------------------------------------------------
+
+7.3 Supabase 数据库
+
+- 控制台：https://supabase.com/dashboard
+- URL：https://fcndibzroqnztcxaiwui.supabase.co
+
+--------------------------------------------------------------------------------
+
+7.4 Vercel 部署（待完成）
+
+- 控制台：https://vercel.com/
+- 项目名称：83162175-qq-com
+
+================================================================================
+
+八、部署步骤总结
+
+步骤 1：准备构建产物
+
+cd /workspace/projects
+pnpm build:web
+git add dist-web
+git commit -m "Add dist-web"
+git push
+
+--------------------------------------------------------------------------------
+
+步骤 2：Vercel 配置
+
+1. 登录 Vercel（使用 GitHub）
+2. 导入仓库：xuejian36322/83162175-qq.com
+3. 配置：
+   - Framework Preset: Other
+   - Root Directory: .
+   - Build Command: 留空
+   - Install Command: 留空
+   - Output Directory: dist-web
+4. 点击 Deploy
+
+--------------------------------------------------------------------------------
+
+步骤 3：获取访问地址
+
+- 部署成功后获取域名
+- 访问域名使用系统
+
+================================================================================
+
+九、系统功能清单
+
+✅ 用户登录和审批
+✅ 订单管理（创建、查询、状态更新）
+✅ 业务流转（映射、锁定、执行）
+✅ 费用申请
+✅ 开票申请
+✅ 统计报表
+✅ 用户审批（超级管理员专属）
+
+================================================================================
+
+十、重要提示
+
+1. GitHub Token 安全
+   - Token 只显示一次，需要立即保存
+   - 不要在公开场合分享 Token
+   - 定期更换 Token
+
+2. Vercel 配置关键点
+   - Root Directory 必须是 . （根目录）
+   - Build 和 Install 命令必须留空
+   - Output Directory 必须是 dist-web
+
+3. 部署后测试
+   - 访问域名查看登录页面
+   - 输入测试代码：test_code_18700999611
+   - 登录成功说明部署正常
+
+================================================================================
+
+十一、待完成事项
+
+1. 在 Vercel 完成部署
+2. 获取访问域名
+3. 测试系统功能
+4. 配置自定义域名（可选）
+5. 配置后端 API 地址（可选）
+
+================================================================================
+
+整理时间：2024年
+整理人：Taro 小程序开发助手
